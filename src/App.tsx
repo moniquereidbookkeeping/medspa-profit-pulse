@@ -6,13 +6,6 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS } from './calc';
 
-// Correct Live Public Viewform URL & Entry Keys Configuration
-const CONFIG = {
-  formViewUrl: "https://docs.google.com/forms/d/e/1FAIpQLSePe4W0m6STMu0kzit0grjbQR50BvBXiS7flzh-CLmKDP9OGQ/viewform",
-  phoneFieldKey: "entry.307925494",
-  payloadKey: "entry.1181600789"
-};
-
 const STORAGE_KEY = "medspa_profit_pulse_state";
 
 export default function App() {
@@ -121,13 +114,11 @@ export default function App() {
       return;
     }
 
-    const summaryString = `Category: ${category.toUpperCase()} | Takeaway: $${metrics.yourRealTakeawayCash.toFixed(2)} | Margin: ${metrics.yourRealKeepPercentagePct}%`;
+    const summaryString = `MedSpa Profit Report:\nCategory: ${category.toUpperCase()}\nTakeaway: $${metrics.yourRealTakeawayCash.toFixed(2)}\nMargin: ${metrics.yourRealKeepPercentagePct}%\nClient Phone: ${sanitizedPhone}`;
 
-    // Construct the live prefilled Google Form view URL
-    const targetUrl = `${CONFIG.formViewUrl}?usp=pp_url&${CONFIG.phoneFieldKey}=${encodeURIComponent(sanitizedPhone)}&${CONFIG.payloadKey}=${encodeURIComponent(summaryString)}`;
-
-    // Open the live pre-filled form in a clean new tab
-    window.open(targetUrl, '_blank');
+    // Opens their default SMS or email app pre-populated with the exact report breakdown (Free & 100% Reliable)
+    const smsUrl = `sms:?body=${encodeURIComponent(summaryString)}`;
+    window.location.href = smsUrl;
 
     setIsSubmitted(true);
     setToastVisible(true);
@@ -346,18 +337,18 @@ export default function App() {
               required 
             />
             <button type="submit" className="cta-btn">Text Me My Profit Summary</button>
-            {toastVisible && <div className="toast-msg" style={{ display: 'block' }}>✓ Profit Breakdown queued for dispatch!</div>}
+            {toastVisible && <div className="toast-msg" style={{ display: 'block' }}>✓ Profit Breakdown prepared!</div>}
           </div>
         </form>
       ) : (
         <div className="lead-box" style={{ background: 'rgba(6, 78, 59, 0.25)', borderColor: 'rgba(52, 211, 153, 0.4)' }}>
           <div style={{ textAlign: 'center', marginBottom: '8px' }}>
             <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34D399', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: '999px', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
-              Report Dispatched Successfully!
+              Report Ready to Dispatch!
             </span>
           </div>
           <p style={{ fontSize: '12px', color: '#E2E8F0', textAlign: 'center', margin: '8px 0 12px 0', lineHeight: 1.4 }}>
-            Your personalized unit economics breakdown has been securely logged. Ready to lock in your higher margin menu?
+            Your messaging app has opened with your custom unit economics report. Ready to lock in your higher margin menu?
           </p>
           <a href="https://calendly.com" target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ textDecoration: 'none', marginTop: 0, background: 'linear-gradient(90deg, #34D399, #6EE7B7, #34D399)', color: '#020617', textAlign: 'center' }}>
             Schedule Your Diagnostic Review Call ⚡
