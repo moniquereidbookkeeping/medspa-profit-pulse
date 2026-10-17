@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The MedSpa Profit Pulse Calculator</title>
+    <meta name="description" content="Aesthetic Clinic Unit Economics &amp; Compensation Calibration System.">
+    <meta property="og:title" content="The MedSpa Profit Pulse Calculator">
+    <meta property="og:description" content="Aesthetic Clinic Unit Economics &amp; Compensation Calibration System.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <style>
+        /* Luxury Aesthetic Styling Guidelines */
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #020617; 
+            color: #E2E8F0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 16px;
+            box-sizing: border-box;
+        }
+        .app-card {
+            background-color: #0F172A; 
+            width: 100%;
+            max-width: 460px;
+            border-radius: 16px;
+            border: 1px solid rgba(245, 230, 196, 0.2); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        .header {
+            position: relative;
+        }
+        .header h1 {
+            color: #F5E6C4; 
+            font-size: 21px;
+            text-align: center;
+            margin: 0;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+        }
+        .header p {
+            color: #94A3B8;
+            font-size: 11px;
+            text-align: center;
+            margin: 4px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+        .header-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .badge-pill {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: rgba(212, 175, 55, 0.12);
+            color: #D4AF37;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+        .reset-link-btn {
+            background: none;
+            border: none;
+            color: #64748B;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 4px;
+            transition: color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .reset-link-btn:hover {
+            color: #F5E6C4;
+        }
+
+        /* Softened Tab Labels */
+        .tab-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            background-color: #020617;
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid #1E293B;
+            margin-top: 16px;
+            gap: 3px;
+        }
+        .tab-btn {
+            background: none;
+            border: 1px solid transparent;
+            color: #64748B;
+            padding: 9px 2px;
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+        }
+        @media (max-width: 380px) {
+            .tab-btn {
+                font-size: 9px;
+                padding: 8px 1px;
+            }
+        }
+        .tab-btn.active {
+            background-color: #1E293B;
+            color: #F5E6C4;
+            border: 1px solid rgba(245, 230, 196, 0.25);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
+        }
+
+        .input-group {
+            margin-top: 16px;
+        }
+        .label-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94A3B8;
+            margin-bottom: 6px;
+        }
+        .label-sub {
+            font-size: 10px;
+            color: #64748B;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+        .input-row-split {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+        .toggle-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background-color: #020617;
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid #1E293B;
+        }
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #94A3B8;
+            padding: 8px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        .toggle-btn.active {
+            background-color: #F5E6C4;
+            color: #020617;
+            font-weight: 700;
+        }
+        .manual-input {
+            width: 100%;
+            background-color: #020617;
+            border: 1px solid #1E293B;
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #F5E6C4;
+            font-size: 15px;
+            font-weight: 600;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .manual-input:focus {
+            border-color: #D4AF37;
+        }
+        .rate-suffix-input {
+            text-align: center;
+            padding: 8px !important;
+            font-size: 13px !important;
+        }
+        .currency-input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .currency-input-wrap span {
+            position: absolute;
+            left: 12px;
+            color: #D4AF37;
+            font-weight: 700;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .currency-input-wrap input {
+            padding-left: 26px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94A3B8;
+            margin-bottom: 6px;
+        }
+        .slider-val {
+            color: #D4AF37;
+            font-weight: 700;
+            background: rgba(212, 175, 55, 0.12);
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            font-size: 11px;
+            letter-spacing: normal;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #1E293B;
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+            touch-action: pan-y;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #D4AF37;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(212,175,55,0.4);
+            border: 2px solid #020617;
+            transition: transform 0.08s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #D4AF37;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(212,175,55,0.4);
+            border: 2px solid #020617;
+        }
+
+        .divider {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #1E293B;
+        }
+        .results-panel {
+            background-color: rgba(2, 6, 23, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(30, 41, 59, 0.8);
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #94A3B8;
+            margin-bottom: 8px;
+        }
+        .result-row span:last-child {
+            font-weight: 600;
+            color: #CBD5E1;
+        }
+        .result-row.total-profit {
+            border-top: 1px solid #1E293B;
+            padding-top: 10px;
+            margin-bottom: 4px;
+            align-items: baseline;
+            color: #E2E8F0;
+        }
+        .profit-text {
+            color: #D4AF37; 
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .margin-text {
+            color: #D4AF37;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .alert-box {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 11px;
+            line-height: 1.45;
+            display: none;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-3px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .alert-warning {
+            background-color: rgba(120, 53, 4, 0.18);
+            border: 1px solid rgba(217, 119, 6, 0.45);
+            color: #FCD34D;
+        }
+        .alert-danger {
+            background-color: rgba(153, 27, 27, 0.18);
+            border: 1px solid rgba(220, 38, 38, 0.45);
+            color: #FCA5A5;
+        }
+
+        .lead-box {
+            margin-top: 16px;
+            background-color: #020617;
+            border: 1px dashed rgba(245, 230, 196, 0.25);
+            padding: 14px;
+            border-radius: 12px;
+        }
+        .lead-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #F5E6C4;
+            display: block;
+        }
+        .lead-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #1E293B;
+            background-color: #0F172A;
+            color: #E2E8F0;
+            font-size: 13px;
+            margin-top: 8px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .lead-input:focus {
+            border-color: #D4AF37;
+        }
+        .cta-btn {
+            display: block;
+            text-align: center;
+            background: linear-gradient(90deg, #D4AF37, #F5E6C4, #D4AF37);
+            color: #020617;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 12.5px;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 10px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+            transition: transform 0.1s ease, box-shadow 0.15s ease;
+        }
+        .cta-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.35);
+        }
+        .cta-btn:active {
+            transform: translateY(0);
+        }
+
+        .secondary-cta-btn {
+            display: block;
+            text-align: center;
+            background: #020617;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: #F5E6C4;
+            padding: 11px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            text-decoration: none;
+            margin-top: 10px;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .secondary-cta-btn:hover {
+            border-color: #D4AF37;
+            background: rgba(212, 175, 55, 0.08);
+        }
+
+        .toast-msg {
+            display: none;
+            font-size: 11px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            background: rgba(52, 211, 153, 0.15);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            color: #34D399;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .footer-text {
+            text-align: center;
+            font-size: 9px;
+            color: #64748B;
+            margin: 12px 0 0 0;
+            letter-spacing: 0.03em;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+        }
+        .modal-card {
+            background-color: #0F172A;
+            border: 1px solid rgba(245, 230, 196, 0.25);
+            border-radius: 14px;
+            padding: 20px;
+            max-width: 360px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-card">
+        
+        <div class="header">
+            <div class="header-top-bar">
+                <span class="badge-pill">Clinic Unit Economics</span>
+                <button type="button" class="reset-link-btn" onclick="resetDefaults()" title="Reset to standard defaults">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    Reset Defaults
+                </button>
+            </div>
+            <h1>THE MEDSPA PROFIT PULSE</h1>
+            <p>Find Missing Cash In Your Menu</p>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="tab-container" role="tablist" aria-label="Clinical Category">
+            <button id="tabInject" onclick="setCategory('injectables')" class="tab-btn active" role="tab" aria-selected="true">Injectables</button>
+            <button id="tabLaser" onclick="setCategory('lasers')" class="tab-btn" role="tab" aria-selected="false">Lasers &amp; Devices</button>
+            <button id="tabFacial" onclick="setCategory('facials')" class="tab-btn" role="tab" aria-selected="false">Facials &amp; Skin</button>
+        </div>
+
+        <!-- Payment Method Setup -->
+        <div class="input-group">
+            <span class="label-text">
+                How Do Clients Pay You?
+                <span class="label-sub">Fee Rate %</span>
+            </span>
+            <div class="input-row-split">
+                <div class="toggle-container" role="radiogroup" aria-label="Payment Method">
+                    <button id="payCard" onclick="setPayment('card')" class="toggle-btn active" role="radio" aria-checked="true">Regular Card</button>
+                    <button id="payCherry" onclick="setPayment('cherry')" class="toggle-btn" role="radio" aria-checked="false">⚡ Cherry Split</button>
+                </div>
+                <div>
+                    <input type="number" id="inputFeeRate" class="manual-input rate-suffix-input" value="3.0" step="0.1" min="0" max="25" oninput="queueCalculation()" aria-label="Processing fee rate percentage">
+                </div>
+            </div>
+        </div>
+
+        <!-- Treatment Type Setup -->
+        <div class="input-group">
+            <span class="label-text">
+                Treatment Structure
+                <span class="label-sub" id="sessionsStatusLabel">1 visit</span>
+            </span>
+            <div class="input-row-split">
+                <div class="toggle-container" role="radiogroup" aria-label="Treatment Structure">
+                    <button id="typeSingle" onclick="setTreatmentType('single')" class="toggle-btn active" role="radio" aria-checked="true">Single Visit</button>
+                    <button id="typePackage" onclick="setTreatmentType('package')" class="toggle-btn" role="radio" aria-checked="false">📦 Multi-Session</button>
+                </div>
+                <div>
+                    <input type="number" id="inputSessions" class="manual-input rate-suffix-input" value="1" min="1" max="24" step="1" oninput="queueCalculation()" disabled aria-label="Number of package sessions">
+                </div>
+            </div>
+        </div>
+
+        <!-- Friendly Manual Financial Input Fields -->
+        <div class="input-group">
+            <label class="label-text" for="inputPrice">What Does the Client Pay You? ($)</label>
+            <div class="currency-input-wrap">
+                <span>$</span>
+                <input type="number" id="inputPrice" class="manual-input" value="600" min="0" step="10" oninput="queueCalculation()">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="label-text" for="inputCost">Wholesale Cost of Products/Boxes Used ($)</label>
+            <div class="currency-input-wrap">
+                <span>$</span>
+                <input type="number" id="inputCost" class="manual-input" value="200" min="0" step="5" oninput="queueCalculation()">
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label class="label-text" for="inputOverhead">Estimated Room Overhead per Hour ($)</label>
+            <div class="currency-input-wrap">
+                <span>$</span>
+                <input type="number" id="inputOverhead" class="manual-input" value="50" min="0" step="5" oninput="queueCalculation()">
+            </div>
+        </div>
+
+        <!-- Product Waste Slider Block with Manual Input Override -->
+        <div class="input-group">
+            <div class="slider-header">
+                <span class="label-text" style="margin:0;">Product Waste/Spill Cushion</span>
+                <div class="pct-box-layout" style="display: flex; align-items: center; background-color: #020617; border: 1px solid #1E293B; border-radius: 6px; padding: 2px 6px; max-width: 60px;">
+                    <input type="number" id="txtWaste" class="mini-pct-input" value="10" min="0" max="25" oninput="syncManualInputToSlider('waste', this.value)" style="width: 100%; background: none; border: none; color: #F5E6C4; font-size: 14px; font-weight: 700; text-align: right; outline: none;">
+                    <span class="pct-symbol" style="color: #64748B; font-size: 13px; font-weight: 600; margin-left: 2px;">%</span>
+                </div>
+            </div>
+            <input type="range" id="inputWaste" min="0" max="25" step="5" value="10" oninput="syncSliderToManualInput('waste', this.value)" style="width: 100%; height: 6px; background: #1E293B; border-radius: 4px; outline: none; -webkit-appearance: none; appearance: none; cursor: pointer;">
+        </div>
+
+        <!-- Provider Commission Slider Block with Manual Input Override -->
+        <div class="input-group">
+            <div class="slider-header">
+                <span class="label-text" style="margin:0;">Provider Commission Cut</span>
+                <div class="pct-box-layout" style="display: flex; align-items: center; background-color: #020617; border: 1px solid #1E293B; border-radius: 6px; padding: 2px 6px; max-width: 60px;">
+                    <input type="number" id="txtPayout" class="mini-pct-input" value="30" min="0" max="50" oninput="syncManualInputToSlider('payout', this.value)" style="width: 100%; background: none; border: none; color: #F5E6C4; font-size: 14px; font-weight: 700; text-align: right; outline: none;">
+                    <span class="pct-symbol" style="color: #64748B; font-size: 13px; font-weight: 600; margin-left: 2px;">%</span>
+                </div>
+            </div>
+            <input type="range" id="inputPayout" min="0" max="50" step="5" value="30" oninput="syncSliderToManualInput('payout', this.value)" style="width: 100%; height: 6px; background: #1E293B; border-radius: 4px; outline: none; -webkit-appearance: none; appearance: none; cursor: pointer;">
+        </div>
+
+        <hr class="divider">
+
+        <!-- Results Panel -->
+        <div class="results-panel">
+            <div class="result-row total-profit">
+                <span>Your Real Takeaway Cash</span>
+                <span class="profit-text" id="displayTakeaway">$132.00</span>
+            </div>
+            <div class="result-row" style="margin-bottom: 12px;">
+                <span>Your Real Keep Percentage</span>
+                <span class="margin-text" id="displayMargin">22.0%</span>
+            </div>
+
+            <div class="result-row">
+                <span>Hidden Platform Fees (<span id="feeLabel">3.0%</span>)</span>
+                <span id="displayFees">$18.00</span>
+            </div>
+            <div class="result-row">
+                <span>Total Cost of Materials (<span id="wasteLabel">+10% cushion</span>)</span>
+                <span id="displayMaterials">$220.00</span>
+            </div>
+            <div class="result-row">
+                <span>Provider Payroll Cut (<span id="commissionLabel">30%</span>)</span>
+                <span id="displayCommission">$180.00</span>
+            </div>
+            <div class="result-row">
+                <span>Room Operational Expense</span>
+                <span id="displayOverhead">$50.00</span>
+            </div>
+            <div class="result-row" style="border-top: 1px solid rgba(30, 41, 59, 0.6); padding-top: 6px; color: #E2E8F0;">
+                <span>Total Expense Burden</span>
+                <span id="displayTotalOutflows" style="color: #F5E6C4;">$468.00</span>
+            </div>
+
+            <!-- Per Session Row (revealed on Multi-Session) -->
+            <div class="result-row" id="perSessionRow" style="display: none; border-top: 1px dashed rgba(212, 175, 55, 0.3); padding-top: 6px; color: #D4AF37;">
+                <span id="perSessionLabel">Takeaway Per Visit</span>
+                <span id="displayPerVisit">$33.00</span>
+            </div>
+        </div>
+
+        <!-- Context-Aware Notification Cards -->
+        <div id="deferredWarning" class="alert-box alert-warning" role="alert">
+            <!-- Text dynamically populated -->
+        </div>
+
+        <div id="marginWarning" class="alert-box alert-danger" role="alert">
+            <!-- Text dynamically populated -->
+        </div>
+
+        <!-- 📲 HIGH-CONVERTING SMS MAGIC LINK LEAD PIPELINE -->
+        <form action="https://google.com" method="POST" id="leadForm" onsubmit="submitFreeGoogleFormPipeline(event); return false;">
+            <div class="lead-box">
+                <label class="label-text" style="color: #F5E6C4;">Text Me My Menu Profit Report</label>
+                <!-- Clean, mobile-native phone keyboard mask layout input -->
+                <input type="tel" name="entry.1812474003" id="leadPhone" class="manual-input" style="font-size:14px; margin-top: 6px;" placeholder="Enter mobile phone number..." pattern="[0-9]{10,11}" required>
+                <input type="hidden" name="entry.311311545" id="hiddenReportData">
+                <button type="submit" class="cta-btn">Text Me My Profit Summary</button>
+                <div id="formSuccessToast" class="toast-msg">
+                    ✓ Personalized Profit Breakdown compiled and queued for dispatch!
+                </div>
+            </div>
+        </form>
+
+        <!-- Secondary Consultation Button -->
+        <a href="https://calendly.com/moniquethebookkeeper/20min?month=2026-10" target="_blank" rel="noopener noreferrer" class="secondary-cta-btn" id="bookConsultationBtn">
+            Chat with Monique Reid Bookkeeping
+        </a>
+
+        <!-- Fast Output Modal -->
+        <div id="outputModal" class="modal-overlay" style="display: none;">
+            <div class="modal-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h3 style="color: #F5E6C4; margin: 0; font-size: 15px; font-weight: 700;">Instant Profit Report</h3>
+                    <button type="button" onclick="document.getElementById('outputModal').style.display='none'" style="background: none; border: none; color: #94A3B8; font-size: 18px; cursor: pointer; padding: 2px 6px;">✕</button>
+                </div>
+                <p style="color: #94A3B8; font-size: 12px; margin: 0 0 12px 0;">Enter your mobile number to receive your complete unit economics breakdown via SMS.</p>
+                <button type="button" class="cta-btn" style="margin-top: 4px;" onclick="document.getElementById('outputModal').style.display='none'; document.getElementById('leadPhone').focus();">Proceed to Report</button>
+            </div>
+        </div>
+
+        <p class="footer-text">CONFIDENTIAL CLINIC BENCHMARKING ENGINE • MONIQUE REID</p>
+
+    </div>
+
+    <script>
+        (function() {
+            "use strict";
+
+            const STORAGE_KEY = "medspa_profit_pulse_state";
+
+            const CATEGORIES = {
+                injectables: { price: 600, cost: 200, overhead: 50 },
+                lasers: { price: 1200, cost: 150, overhead: 120 },
+                facials: { price: 250, cost: 35, overhead: 45 }
+            };
+
+            const state = {
+                category: "injectables",
+                paymentMethod: "card", // "card" | "cherry"
+                treatmentType: "single", // "single" | "package"
+                wasteCushion: 10,
+                commission: 30
+            };
+
+            const els = {
+                tabInject: document.getElementById("tabInject"),
+                tabLaser: document.getElementById("tabLaser"),
+                tabFacial: document.getElementById("tabFacial"),
+                payCard: document.getElementById("payCard"),
+                payCherry: document.getElementById("payCherry"),
+                inputFeeRate: document.getElementById("inputFeeRate"),
+                typeSingle: document.getElementById("typeSingle"),
+                typePackage: document.getElementById("typePackage"),
+                inputSessions: document.getElementById("inputSessions"),
+                sessionsStatusLabel: document.getElementById("sessionsStatusLabel"),
+                inputPrice: document.getElementById("inputPrice"),
+                inputCost: document.getElementById("inputCost"),
+                inputOverhead: document.getElementById("inputOverhead"),
+                txtWaste: document.getElementById("txtWaste"),
+                inputWaste: document.getElementById("inputWaste"),
+                txtPayout: document.getElementById("txtPayout"),
+                inputPayout: document.getElementById("inputPayout"),
+                displayTakeaway: document.getElementById("displayTakeaway"),
+                displayMargin: document.getElementById("displayMargin"),
+                displayFees: document.getElementById("displayFees"),
+                displayMaterials: document.getElementById("displayMaterials"),
+                displayCommission: document.getElementById("displayCommission"),
+                displayOverhead: document.getElementById("displayOverhead"),
+                displayTotalOutflows: document.getElementById("displayTotalOutflows"),
+                perSessionRow: document.getElementById("perSessionRow"),
+                perSessionLabel: document.getElementById("perSessionLabel"),
+                displayPerVisit: document.getElementById("displayPerVisit"),
+                feeLabel: document.getElementById("feeLabel"),
+                wasteLabel: document.getElementById("wasteLabel"),
+                commissionLabel: document.getElementById("commissionLabel"),
+                deferredWarning: document.getElementById("deferredWarning"),
+                marginWarning: document.getElementById("marginWarning"),
+                hiddenReportData: document.getElementById("hiddenReportData"),
+                diagnosticsData: document.getElementById("hiddenReportData"),
+                leadForm: document.getElementById("leadForm"),
+                leadPhone: document.getElementById("leadPhone"),
+                formSuccessToast: document.getElementById("formSuccessToast")
+            };
+
+            // --- ⚡ GOOGLE FORM SMS LEAD ROUTING PIPELINE ---
+            const GOOGLE_FORM_ACTION_URL = "https://google.com";
+            const PHONE_FIELD_ENTRY_KEY = "entry.1812474003";
+            const DIAGNOSTIC_DATA_PAYLOAD_KEY = "entry.311311545";
+
+            window.openOutputSelectionModal = function() {
+                // Skips manual choice blocks, opening the fast lead window instantly on single button tap
+                const modal = document.getElementById('outputModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                }
+            };
+
+            window.submitFreeGoogleFormPipeline = function(e) {
+                if (e && e.preventDefault) e.preventDefault();
+                const phoneField = document.getElementById('leadPhone') ? document.getElementById('leadPhone').value : '';
+                const reportPayload = document.getElementById('hiddenReportData') ? document.getElementById('hiddenReportData').value : '';
+
+                const formData = new FormData();
+                formData.append(PHONE_FIELD_ENTRY_KEY, phoneField);
+                formData.append(DIAGNOSTIC_DATA_PAYLOAD_KEY, reportPayload);
+
+                fetch(GOOGLE_FORM_ACTION_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: formData
+                }).catch(function(err) {
+                    console.warn('Google Form transmission status:', err);
+                });
+
+                const toast = document.getElementById('formSuccessToast');
+                if (toast) {
+                    toast.style.display = 'block';
+                    toast.textContent = `✓ Menu Profit Report queued for ${phoneField}!`;
+                    setTimeout(function() {
+                        toast.style.display = 'none';
+                    }, 6000);
+                }
+            };
+
+            window.executeSMSPipeline = window.submitFreeGoogleFormPipeline;
+
+            function formatCurrency(val) {
+                return new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(val);
+            }
+
+            // Expose globally for inline onclick/oninput handlers
+            window.setCategory = function(cat) {
+                state.category = cat;
+                els.tabInject.classList.toggle("active", cat === "injectables");
+                els.tabInject.setAttribute("aria-selected", cat === "injectables" ? "true" : "false");
+                els.tabLaser.classList.toggle("active", cat === "lasers");
+                els.tabLaser.setAttribute("aria-selected", cat === "lasers" ? "true" : "false");
+                els.tabFacial.classList.toggle("active", cat === "facials");
+                els.tabFacial.setAttribute("aria-selected", cat === "facials" ? "true" : "false");
+
+                const defaults = CATEGORIES[cat];
+                if (defaults) {
+                    els.inputPrice.value = defaults.price;
+                    els.inputCost.value = defaults.cost;
+                    els.inputOverhead.value = defaults.overhead;
+                }
+                recalculate();
+            };
+
+            window.setPayment = function(method) {
+                state.paymentMethod = method;
+                els.payCard.classList.toggle("active", method === "card");
+                els.payCard.setAttribute("aria-checked", method === "card" ? "true" : "false");
+                els.payCherry.classList.toggle("active", method === "cherry");
+                els.payCherry.setAttribute("aria-checked", method === "cherry" ? "true" : "false");
+
+                if (method === "cherry") {
+                    els.inputFeeRate.value = "8.0";
+                } else {
+                    els.inputFeeRate.value = "3.0";
+                }
+                recalculate();
+            };
+
+            window.setTreatmentType = function(type, customSessions) {
+                state.treatmentType = type;
+                els.typeSingle.classList.toggle("active", type === "single");
+                els.typeSingle.setAttribute("aria-checked", type === "single" ? "true" : "false");
+                els.typePackage.classList.toggle("active", type === "package");
+                els.typePackage.setAttribute("aria-checked", type === "package" ? "true" : "false");
+
+                if (type === "package") {
+                    els.inputSessions.disabled = false;
+                    els.inputSessions.value = customSessions !== undefined ? customSessions : 4;
+                    els.sessionsStatusLabel.textContent = els.inputSessions.value + " visits";
+                } else {
+                    els.inputSessions.value = 1;
+                    els.inputSessions.disabled = true;
+                    els.sessionsStatusLabel.textContent = "1 visit";
+                }
+                recalculate();
+            };
+
+            // Fluid Slider Logic: Instant updates with decoupled recalculation
+            let calcTimer = null;
+            window.queueCalculation = function() {
+                if (calcTimer) clearTimeout(calcTimer);
+                calcTimer = setTimeout(function() {
+                    recalculate();
+                    calcTimer = null;
+                }, 16);
+            };
+
+            // --- TWO-WAY SLIDER & MANUAL BOX SYNCING PIPELINE ---
+            window.syncSliderToManualInput = function(target, value) {
+                if(target === 'waste') {
+                    document.getElementById('txtWaste').value = value;
+                } else {
+                    document.getElementById('txtPayout').value = value;
+                }
+                queueCalculation();
+            };
+
+            window.syncManualInputToSlider = function(target, value) {
+                const num = parseFloat(value) || 0;
+                if(target === 'waste') {
+                    document.getElementById('inputWaste').value = num;
+                } else {
+                    document.getElementById('inputPayout').value = num;
+                }
+                queueCalculation();
+            };
+
+            window.resetDefaults = function() {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                } catch(e) {}
+                setCategory("injectables");
+                setPayment("card");
+                setTreatmentType("single");
+                document.getElementById('txtWaste').value = "10";
+                document.getElementById('inputWaste').value = "10";
+                document.getElementById('txtPayout').value = "30";
+                document.getElementById('inputPayout').value = "30";
+                if (document.getElementById('leadPhone')) {
+                    document.getElementById('leadPhone').value = "";
+                }
+                recalculate();
+            };
+
+            // Recalculation Engine
+            function recalculate() {
+                const price = Math.max(0, parseFloat(els.inputPrice.value) || 0);
+                const wholesaleCost = Math.max(0, parseFloat(els.inputCost.value) || 0);
+                const hourlyOverhead = Math.max(0, parseFloat(els.inputOverhead.value) || 0);
+                const feeRatePct = Math.max(0, parseFloat(els.inputFeeRate.value) || 0);
+                const sessions = state.treatmentType === "single" ? 1 : Math.max(1, parseInt(els.inputSessions.value, 10) || 1);
+
+                // This overrides the slider increments, pulling your manual custom values like 6% or 32% instantly
+                const wastePct = (parseFloat(document.getElementById('txtWaste').value) || 0) / 100;
+                const payoutPct = (parseFloat(document.getElementById('txtPayout').value) || 0) / 100;
+                const wasteCushionPct = wastePct * 100;
+                const commissionPct = payoutPct * 100;
+
+                if (state.treatmentType === "package") {
+                    els.sessionsStatusLabel.textContent = sessions + " visits";
+                }
+
+                // 1. Hidden Platform Fees = Price * (Manual Fee Rate % / 100)
+                const hiddenPlatformFees = price * (feeRatePct / 100);
+
+                // 2. Total Cost of Materials = (Wholesale Cost * Package Sessions) * (1 + Waste Cushion %)
+                const totalCostOfMaterials = (wholesaleCost * sessions) * (1 + wastePct);
+
+                // 3. Provider Payroll Cut = Price * (Commission % / 100)
+                const providerPayrollCut = price * payoutPct;
+
+                // 4. Room Operational Expense = Hourly Overhead * Package Sessions
+                const roomOperationalExpense = hourlyOverhead * sessions;
+
+                // Total Expense Burden
+                const totalOutflows = hiddenPlatformFees + totalCostOfMaterials + providerPayrollCut + roomOperationalExpense;
+
+                // 5. Your Real Takeaway Cash = Price - Hidden Platform Fees - Total Cost of Materials - Provider Payroll Cut - Room Operational Expense
+                const yourRealTakeawayCash = price - totalOutflows;
+
+                // 6. Your Real Keep Percentage % = (Your Real Takeaway Cash / Price) * 100
+                const yourRealKeepPercentagePct = price > 0 ? (yourRealTakeawayCash / price) * 100 : 0;
+
+                // Update Output UI
+                els.displayTakeaway.textContent = formatCurrency(yourRealTakeawayCash);
+                if (yourRealTakeawayCash < 0) {
+                    els.displayTakeaway.style.color = "#F87171";
+                    els.displayMargin.style.color = "#F87171";
+                } else if (yourRealKeepPercentagePct < 35) {
+                    els.displayTakeaway.style.color = "#FBBF24";
+                    els.displayMargin.style.color = "#FBBF24";
+                } else {
+                    els.displayTakeaway.style.color = "#34D399";
+                    els.displayMargin.style.color = "#34D399";
+                }
+
+                const formattedMargin = (Math.round(yourRealKeepPercentagePct * 10) / 10).toFixed(1) + "%";
+                els.displayMargin.textContent = formattedMargin;
+
+                els.feeLabel.textContent = (Math.round(feeRatePct * 10) / 10) + "%";
+                els.displayFees.textContent = formatCurrency(hiddenPlatformFees);
+
+                els.wasteLabel.textContent = "+" + (Math.round(wasteCushionPct * 10) / 10) + "% cushion";
+                els.displayMaterials.textContent = formatCurrency(totalCostOfMaterials);
+
+                els.commissionLabel.textContent = (Math.round(commissionPct * 10) / 10) + "%";
+                els.displayCommission.textContent = formatCurrency(providerPayrollCut);
+
+                els.displayOverhead.textContent = formatCurrency(roomOperationalExpense);
+                els.displayTotalOutflows.textContent = formatCurrency(totalOutflows);
+
+                // Multi-session per-visit breakdown
+                if (state.treatmentType === "package" && sessions > 1) {
+                    els.perSessionRow.style.display = "flex";
+                    els.perSessionLabel.textContent = "Takeaway Per Visit (" + sessions + " visits)";
+                    els.displayPerVisit.textContent = formatCurrency(yourRealTakeawayCash / sessions);
+                } else {
+                    els.perSessionRow.style.display = "none";
+                }
+
+                // Notification Card A: Deferred Revenue Warning (Id: deferredWarning)
+                // Hidden by default. Reveals instantly when Treatment Type is toggled to "📦 Multi-Session".
+                // Deferred % = ((Sessions - 1) / Sessions) * 100
+                if (state.treatmentType === "package") {
+                    const deferredPct = sessions > 1 ? ((sessions - 1) / sessions) * 100 : 0;
+                    const displayDeferred = deferredPct % 1 === 0 ? deferredPct.toFixed(0) : deferredPct.toFixed(1);
+                    els.deferredWarning.textContent = 
+                        "⚠️ The Future Cash-Flow Trap: You collected all the cash upfront for a package. But legally, " +
+                        displayDeferred + "% of this money is unearned. Spending it today means you are stealing cash from your clinic's future months when patients return for treatments.";
+                    els.deferredWarning.style.display = "block";
+                } else {
+                    els.deferredWarning.style.display = "none";
+                }
+
+                // Notification Card B: Low Margin Warning (Id: marginWarning)
+                // Reveals dynamically whenever Your Real Keep Percentage % falls below 35%
+                if (yourRealKeepPercentagePct < 35) {
+                    els.marginWarning.textContent = 
+                        "🚨 Dangerously Low Retainer Cash: You keep less than 35% of the ticket after your overhead splits. Note: If you are the founder performing this treatment for 'free' to make the numbers look higher, your business model is silently draining your personal cash.";
+                    els.marginWarning.style.display = "block";
+                } else {
+                    els.marginWarning.style.display = "none";
+                }
+
+                // Update Hidden Diagnostics Payload for Formspree & SMS Lead Routing
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    category: state.category,
+                    treatmentType: state.treatmentType,
+                    sessions: sessions,
+                    clientPaymentPrice: price,
+                    wholesaleCost: wholesaleCost,
+                    roomOverheadPerHour: hourlyOverhead,
+                    paymentMethod: state.paymentMethod,
+                    feeRatePct: feeRatePct,
+                    wasteCushionPct: wasteCushionPct,
+                    commissionPct: commissionPct,
+                    results: {
+                        hiddenPlatformFees: hiddenPlatformFees.toFixed(2),
+                        totalCostOfMaterials: totalCostOfMaterials.toFixed(2),
+                        providerPayrollCut: providerPayrollCut.toFixed(2),
+                        roomOperationalExpense: roomOperationalExpense.toFixed(2),
+                        yourRealTakeawayCash: yourRealTakeawayCash.toFixed(2),
+                        yourRealKeepPercentagePct: yourRealKeepPercentagePct.toFixed(2)
+                    }
+                };
+                const formattedReportStr = JSON.stringify(payload, null, 2);
+                if (els.hiddenReportData) {
+                    els.hiddenReportData.value = formattedReportStr;
+                }
+                if (els.diagnosticsData) {
+                    els.diagnosticsData.value = formattedReportStr;
+                }
+
+                saveState();
+            }
+
+            // LocalStorage Auto-Save
+            function saveState() {
+                const phoneField = document.getElementById('leadPhone');
+                const data = {
+                    category: state.category,
+                    paymentMethod: state.paymentMethod,
+                    feeRate: parseFloat(els.inputFeeRate.value) || 3.0,
+                    treatmentType: state.treatmentType,
+                    sessions: parseInt(els.inputSessions.value, 10) || 1,
+                    price: parseFloat(els.inputPrice.value) || 0,
+                    cost: parseFloat(els.inputCost.value) || 0,
+                    overhead: parseFloat(els.inputOverhead.value) || 0,
+                    wasteCushion: parseFloat(document.getElementById('txtWaste').value) || 10,
+                    commission: parseFloat(document.getElementById('txtPayout').value) || 30,
+                    phone: phoneField ? phoneField.value : ""
+                };
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                } catch(e) {}
+            }
+
+            // LocalStorage Load
+            function loadState() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (!raw) return false;
+                    const saved = JSON.parse(raw);
+                    if (!saved) return false;
+
+                    if (saved.category && CATEGORIES[saved.category]) {
+                        state.category = saved.category;
+                        els.tabInject.classList.toggle("active", saved.category === "injectables");
+                        els.tabLaser.classList.toggle("active", saved.category === "lasers");
+                        els.tabFacial.classList.toggle("active", saved.category === "facials");
+                    }
+                    if (saved.paymentMethod) {
+                        state.paymentMethod = saved.paymentMethod;
+                        els.payCard.classList.toggle("active", saved.paymentMethod === "card");
+                        els.payCherry.classList.toggle("active", saved.paymentMethod === "cherry");
+                    }
+                    if (saved.feeRate !== undefined) els.inputFeeRate.value = saved.feeRate;
+
+                    if (saved.treatmentType) {
+                        setTreatmentType(saved.treatmentType, saved.sessions || 4);
+                    }
+
+                    if (saved.price !== undefined) els.inputPrice.value = saved.price;
+                    if (saved.cost !== undefined) els.inputCost.value = saved.cost;
+                    if (saved.overhead !== undefined) els.inputOverhead.value = saved.overhead;
+
+                    if (saved.wasteCushion !== undefined) {
+                        document.getElementById('txtWaste').value = saved.wasteCushion;
+                        document.getElementById('inputWaste').value = saved.wasteCushion;
+                    }
+                    if (saved.commission !== undefined) {
+                        document.getElementById('txtPayout').value = saved.commission;
+                        document.getElementById('inputPayout').value = saved.commission;
+                    }
+                    if (saved.phone && document.getElementById('leadPhone')) {
+                        document.getElementById('leadPhone').value = saved.phone;
+                    }
+
+                    return true;
+                } catch(e) {
+                    return false;
+                }
+            }
+
+            // Initialization & Form Handling
+            function init() {
+                const phoneField = document.getElementById('leadPhone');
+                if (phoneField) {
+                    phoneField.addEventListener("input", saveState);
+                }
+
+                const loaded = loadState();
+                if (!loaded) {
+                    recalculate();
+                } else {
+                    recalculate();
+                }
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+</body>
+</html>
