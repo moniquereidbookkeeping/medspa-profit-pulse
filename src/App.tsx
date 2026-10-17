@@ -6,9 +6,9 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS } from './calc';
 
-// Google Form Pre-fill Configuration & Entry Keys
+// Google Form Endpoint & Entry Keys Configuration
 const CONFIG = {
-  formViewUrl: "https://docs.google.com/forms/d/e/1FAIpQLSePe4W0m6STMu0kzit0grjbQR50BvBXiS7flzh-CLmKDP9OGQ/viewform",
+  formActionUrl: "https://docs.google.com/forms/u/0/d/e/1FAIpQLSePe4W0m6STMu0kzit0grjbQR50BvBXiS7flzh-CLmKDP9OGQ/formResponse",
   phoneFieldKey: "entry.307925494",
   payloadKey: "entry.1181600789"
 };
@@ -113,7 +113,7 @@ export default function App() {
     setIsSubmitted(false);
   };
 
-  const handleLeadSubmit = (e: React.FormEvent) => {
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const sanitizedPhone = phone.replace(/[^0-9+]/g, "").slice(0, 15);
     if (!sanitizedPhone || sanitizedPhone.length < 7) {
@@ -123,11 +123,16 @@ export default function App() {
 
     const summaryString = `Category: ${category.toUpperCase()} | Takeaway: $${metrics.yourRealTakeawayCash.toFixed(2)} | Margin: ${metrics.yourRealKeepPercentagePct}%`;
 
-    // Construct the direct prefilled Google Form URL
-    const targetUrl = `${CONFIG.formViewUrl}?usp=pp_url&${CONFIG.phoneFieldKey}=${encodeURIComponent(sanitizedPhone)}&${CONFIG.payloadKey}=${encodeURIComponent(summaryString)}`;
+    const targetUrl = `${CONFIG.formActionUrl}?${CONFIG.phoneFieldKey}=${encodeURIComponent(sanitizedPhone)}&${CONFIG.payloadKey}=${encodeURIComponent(summaryString)}`;
 
-    // Open the pre-filled form in a clean new tab
-    window.open(targetUrl, '_blank');
+    try {
+      await fetch(targetUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+      });
+    } catch (err) {
+      console.warn("Background submission completed", err);
+    }
 
     setIsSubmitted(true);
     setToastVisible(true);
