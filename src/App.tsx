@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS } from './calc';
 
-// Protected Environment Config & Google Form Endpoints
+// Updated Protected Environment Config with your new Google Form Endpoint and Entry Keys
 const CONFIG = {
-  formActionUrl: "https://docs.google.com/forms/u/0/d/e/1FAIpQLSf3p28CRZaSgGOBeHwy5jkhX-GBqZ12kurpqaOfdw-Dop6o0w/formResponse",
-  phoneFieldKey: "entry.1359383173",
-  payloadKey: "entry.859528931"
+  formActionUrl: "https://docs.google.com/forms/u/0/d/e/1FAIpQLSePe4W0m6STMu0kzit0grjbQR50BvBXiS7flzh-CLmKDP9OGQ/formResponse",
+  phoneFieldKey: "entry.307925494",
+  payloadKey: "entry.1181600789"
 };
 
 const STORAGE_KEY = "medspa_profit_pulse_state";
@@ -338,7 +338,7 @@ export default function App() {
       {/* Hidden iframe to catch Google Form responses cleanly without CORS blocks */}
       <iframe name="hidden_iframe" style={{ display: 'none' }} title="hidden-iframe"></iframe>
 
-      {/* Native HTML Form targeting hidden iframe for zero-cost lead capture */}
+      {/* Native HTML Form targeting hidden iframe for zero-cost lead capture with updated entry keys */}
       <form 
         id="nativeGoogleForm" 
         action={CONFIG.formActionUrl} 
