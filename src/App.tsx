@@ -123,16 +123,15 @@ export default function App() {
 
     const summaryString = `Category: ${category.toUpperCase()} | Takeaway: $${metrics.yourRealTakeawayCash.toFixed(2)} | Margin: ${metrics.yourRealKeepPercentagePct}%`;
 
-    const formData = new FormData();
-    formData.append(CONFIG.phoneFieldKey, sanitizedPhone);
-    formData.append(CONFIG.payloadKey, summaryString);
+    const payloadInput = document.getElementById("hiddenPayloadInput") as HTMLInputElement;
+    const phoneInput = document.getElementById("hiddenPhoneInput") as HTMLInputElement;
+    if (payloadInput) payloadInput.value = summaryString;
+    if (phoneInput) phoneInput.value = sanitizedPhone;
 
-    // Secure submission to your Google Form backend endpoint
-    fetch(CONFIG.formActionUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: formData
-    }).catch(err => console.warn('Form dispatch status:', err));
+    const formElement = document.getElementById("nativeGoogleForm") as HTMLFormElement;
+    if (formElement) {
+      formElement.submit();
+    }
 
     setIsSubmitted(true);
     setToastVisible(true);
@@ -336,9 +335,21 @@ export default function App() {
         </div>
       )}
 
-      {/* Lead Pipeline Form & Interactive Success Window */}
-      {!isSubmitted ? (
-        <form onSubmit={handleLeadSubmit}>
+      {/* Hidden iframe to catch Google Form responses cleanly without CORS blocks */}
+      <iframe name="hidden_iframe" style={{ display: 'none' }} title="hidden-iframe"></iframe>
+
+      {/* Native HTML Form targeting hidden iframe for zero-cost lead capture */}
+      <form 
+        id="nativeGoogleForm" 
+        action={CONFIG.formActionUrl} 
+        method="POST" 
+        target="hidden_iframe"
+        onSubmit={handleLeadSubmit}
+      >
+        <input type="hidden" id="hiddenPhoneInput" name={CONFIG.phoneFieldKey} />
+        <input type="hidden" id="hiddenPayloadInput" name={CONFIG.payloadKey} />
+
+        {!isSubmitted ? (
           <div className="lead-box">
             <label className="label-text" style={{ color: '#F5E6C4' }}>Text Me My Menu Profit Report</label>
             <input 
@@ -353,25 +364,25 @@ export default function App() {
             <button type="submit" className="cta-btn">Text Me My Profit Summary</button>
             {toastVisible && <div className="toast-msg" style={{ display: 'block' }}>✓ Profit Breakdown queued for dispatch!</div>}
           </div>
-        </form>
-      ) : (
-        <div className="lead-box" style={{ background: 'rgba(6, 78, 59, 0.25)', borderColor: 'rgba(52, 211, 153, 0.4)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34D399', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: '999px', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
-              Report Dispatched Successfully!
-            </span>
+        ) : (
+          <div className="lead-box" style={{ background: 'rgba(6, 78, 59, 0.25)', borderColor: 'rgba(52, 211, 153, 0.4)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+              <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34D399', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: '999px', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
+                Report Dispatched Successfully!
+              </span>
+            </div>
+            <p style={{ fontSize: '12px', color: '#E2E8F0', textAlign: 'center', margin: '8px 0 12px 0', lineHeight: 1.4 }}>
+              Your personalized unit economics breakdown has been securely logged. Ready to lock in your higher margin menu?
+            </p>
+            <a href="https://calendly.com" target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ textDecoration: 'none', marginTop: 0, background: 'linear-gradient(90deg, #34D399, #6EE7B7, #34D399)', color: '#020617', textAlign: 'center' }}>
+              Schedule Your Diagnostic Review Call ⚡
+            </a>
+            <button type="button" onClick={() => { setIsSubmitted(false); setPhone(""); }} className="secondary-cta-btn" style={{ marginTop: '8px', width: '100%', cursor: 'pointer' }}>
+              Calculate Another Service
+            </button>
           </div>
-          <p style={{ fontSize: '12px', color: '#E2E8F0', textAlign: 'center', margin: '8px 0 12px 0', lineHeight: 1.4 }}>
-            Your personalized unit economics breakdown has been securely logged. Ready to lock in your higher margin menu?
-          </p>
-          <a href="https://calendly.com" target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ textDecoration: 'none', marginTop: 0, background: 'linear-gradient(90deg, #34D399, #6EE7B7, #34D399)', color: '#020617', textAlign: 'center' }}>
-            Schedule Your Diagnostic Review Call ⚡
-          </a>
-          <button type="button" onClick={() => { setIsSubmitted(false); setPhone(""); }} className="secondary-cta-btn" style={{ marginTop: '8px', width: '100%', cursor: 'pointer' }}>
-            Calculate Another Service
-          </button>
-        </div>
-      )}
+        )}
+      </form>
 
       <a href="https://calendly.com" target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
         Chat with Monique Reid Bookkeeping
