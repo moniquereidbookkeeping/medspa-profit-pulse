@@ -113,7 +113,7 @@ export default function App() {
     setIsSubmitted(false);
   };
 
-  const handleLeadSubmit = async (e: React.FormEvent) => {
+  const handleLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const sanitizedPhone = phone.replace(/[^0-9+]/g, "").slice(0, 15);
     if (!sanitizedPhone || sanitizedPhone.length < 7) {
@@ -123,15 +123,15 @@ export default function App() {
 
     const summaryString = `Category: ${category.toUpperCase()} | Takeaway: $${metrics.yourRealTakeawayCash.toFixed(2)} | Margin: ${metrics.yourRealKeepPercentagePct}%`;
 
-    const targetUrl = `${CONFIG.formActionUrl}?${CONFIG.phoneFieldKey}=${encodeURIComponent(sanitizedPhone)}&${CONFIG.payloadKey}=${encodeURIComponent(summaryString)}`;
+    const phoneInput = document.getElementById("hiddenPhoneInput") as HTMLInputElement;
+    const payloadInput = document.getElementById("hiddenPayloadInput") as HTMLInputElement;
+    
+    if (phoneInput) phoneInput.value = sanitizedPhone;
+    if (payloadInput) payloadInput.value = summaryString;
 
-    try {
-      await fetch(targetUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-      });
-    } catch (err) {
-      console.warn("Background submission completed", err);
+    const formElement = document.getElementById("nativeGoogleForm") as HTMLFormElement;
+    if (formElement) {
+      formElement.submit();
     }
 
     setIsSubmitted(true);
@@ -336,9 +336,21 @@ export default function App() {
         </div>
       )}
 
-      {/* Lead Capture Form & Interactive Success Window */}
+      {/* Hidden iframe to catch Google Form response cleanly without CORS blocks */}
+      <iframe name="hidden_iframe" style={{ display: 'none' }} title="hidden-iframe"></iframe>
+
+      {/* Native HTML Form targeting the hidden iframe */}
       {!isSubmitted ? (
-        <form onSubmit={handleLeadSubmit}>
+        <form 
+          id="nativeGoogleForm"
+          action={CONFIG.formActionUrl}
+          method="POST"
+          target="hidden_iframe"
+          onSubmit={handleLeadSubmit}
+        >
+          <input type="hidden" id="hiddenPhoneInput" name={CONFIG.phoneFieldKey} />
+          <input type="hidden" id="hiddenPayloadInput" name={CONFIG.payloadKey} />
+
           <div className="lead-box">
             <label className="label-text" style={{ color: '#F5E6C4' }}>Text Me My Menu Profit Report</label>
             <input 
