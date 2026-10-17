@@ -160,6 +160,38 @@
             background-color: #020617;
             padding: 4px;
             border-radius: 10px;
+            border: 1px solid #1E293B;
+        }
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #94A3B8;
+            padding: 8px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        .toggle-btn.active {
+            background-color: #F5E6C4;
+            color: #020617;
+            font-weight: 700;
+        }
+        .manual-input {
+            width: 100%;
+            background-color: #020617;
+            border: 1px solid #1E293B;
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #F5E6C4;
+            font-size: 15px;
+            font-weight: 600;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.15s;
+        }
         .manual-input:focus {
             border-color: #D4AF37;
         }
@@ -1057,37 +1089,4 @@
         })();
     </script>
 </body>
-</html>            border: 1px solid #1E293B;
-        }
-        .toggle-btn {
-            background: none;
-            border: none;
-            color: #94A3B8;
-            padding: 8px 6px;
-            font-size: 11px;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.15s, color 0.15s;
-            white-space: nowrap;
-        }
-        .toggle-btn.active {
-            background-color: #F5E6C4;
-            color: #020617;
-            font-weight: 700;
-        }
-        .manual-input {
-            width: 100%;
-            background-color: #020617;
-            border: 1px solid #1E293B;
-            border-radius: 8px;
-            padding: 10px 12px;
-            color: #F5E6C4;
-            font-size: 15px;
-            font-weight: 600;
-            box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.15s;
-        }
-
-
+</html>
