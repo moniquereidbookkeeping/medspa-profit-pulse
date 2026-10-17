@@ -6,9 +6,9 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS } from './calc';
 
-// Google Form Endpoint & Entry Keys Configuration
+// Google Form Pre-fill Configuration & Entry Keys
 const CONFIG = {
-  formActionUrl: "https://docs.google.com/forms/u/0/d/e/1FAIpQLSePe4W0m6STMu0kzit0grjbQR50BvBXiS7flzh-CLmKDP9OGQ/formResponse",
+  formViewUrl: "https://docs.google.com/forms/d/e/1FAIpQLSePe4W0m6STMu0kzit0grjbQR50BvBXiS7flzh-CLmKDP9OGQ/viewform",
   phoneFieldKey: "entry.307925494",
   payloadKey: "entry.1181600789"
 };
@@ -123,16 +123,11 @@ export default function App() {
 
     const summaryString = `Category: ${category.toUpperCase()} | Takeaway: $${metrics.yourRealTakeawayCash.toFixed(2)} | Margin: ${metrics.yourRealKeepPercentagePct}%`;
 
-    const phoneInput = document.getElementById("hiddenPhoneInput") as HTMLInputElement;
-    const payloadInput = document.getElementById("hiddenPayloadInput") as HTMLInputElement;
-    
-    if (phoneInput) phoneInput.value = sanitizedPhone;
-    if (payloadInput) payloadInput.value = summaryString;
+    // Construct the direct prefilled Google Form view URL
+    const targetUrl = `${CONFIG.formViewUrl}?usp=pp_url&${CONFIG.phoneFieldKey}=${encodeURIComponent(sanitizedPhone)}&${CONFIG.payloadKey}=${encodeURIComponent(summaryString)}`;
 
-    const formElement = document.getElementById("nativeGoogleForm") as HTMLFormElement;
-    if (formElement) {
-      formElement.submit();
-    }
+    // Open the pre-filled form in a clean new tab
+    window.open(targetUrl, '_blank');
 
     setIsSubmitted(true);
     setToastVisible(true);
@@ -336,21 +331,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Hidden iframe to catch Google Form response cleanly without CORS blocks */}
-      <iframe name="hidden_iframe" style={{ display: 'none' }} title="hidden-iframe"></iframe>
-
-      {/* Native HTML Form targeting the hidden iframe */}
+      {/* Lead Capture Form & Interactive Success Window */}
       {!isSubmitted ? (
-        <form 
-          id="nativeGoogleForm"
-          action={CONFIG.formActionUrl}
-          method="POST"
-          target="hidden_iframe"
-          onSubmit={handleLeadSubmit}
-        >
-          <input type="hidden" id="hiddenPhoneInput" name={CONFIG.phoneFieldKey} />
-          <input type="hidden" id="hiddenPayloadInput" name={CONFIG.payloadKey} />
-
+        <form onSubmit={handleLeadSubmit}>
           <div className="lead-box">
             <label className="label-text" style={{ color: '#F5E6C4' }}>Text Me My Menu Profit Report</label>
             <input 
