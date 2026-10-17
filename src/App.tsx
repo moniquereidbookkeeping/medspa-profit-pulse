@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS } from './calc';
 
-// Google Form Pre-fill Configuration & Entry Keys
+// Correct Live Public Viewform URL & Entry Keys Configuration
 const CONFIG = {
   formViewUrl: "https://docs.google.com/forms/d/e/1FAIpQLSePe4W0m6STMu0kzit0grjbQR50BvBXiS7flzh-CLmKDP9OGQ/viewform",
   phoneFieldKey: "entry.307925494",
@@ -123,10 +123,10 @@ export default function App() {
 
     const summaryString = `Category: ${category.toUpperCase()} | Takeaway: $${metrics.yourRealTakeawayCash.toFixed(2)} | Margin: ${metrics.yourRealKeepPercentagePct}%`;
 
-    // Construct the direct prefilled Google Form view URL
+    // Construct the live prefilled Google Form view URL
     const targetUrl = `${CONFIG.formViewUrl}?usp=pp_url&${CONFIG.phoneFieldKey}=${encodeURIComponent(sanitizedPhone)}&${CONFIG.payloadKey}=${encodeURIComponent(summaryString)}`;
 
-    // Open the pre-filled form in a clean new tab
+    // Open the live pre-filled form in a clean new tab
     window.open(targetUrl, '_blank');
 
     setIsSubmitted(true);
