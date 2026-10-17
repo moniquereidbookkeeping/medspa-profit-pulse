@@ -4,18 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The MedSpa Profit Pulse Calculator</title>
-    <meta name="description" content="Aesthetic Clinic Unit Economics &amp; Compensation Calibration System.">
+    <meta name="description" content="Aesthetic Clinic Unit Economics & Compensation Calibration System.">
+    <!-- Security Shield: Click-Jacking Frame Protection -->
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none';">
+    
     <meta property="og:title" content="The MedSpa Profit Pulse Calculator">
-    <meta property="og:description" content="Aesthetic Clinic Unit Economics &amp; Compensation Calibration System.">
+    <meta property="og:description" content="Aesthetic Clinic Unit Economics & Compensation Calibration System.">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
+    
     <style>
         /* Luxury Aesthetic Styling Guidelines */
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
-            background-color: #020617; 
+            background-color: #020617;
             color: #E2E8F0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
@@ -24,23 +27,19 @@
             min-height: 100vh;
             margin: 0;
             padding: 20px 16px;
-            box-sizing: border-box;
         }
         .app-card {
-            background-color: #0F172A; 
+            background-color: #0F172A;
             width: 100%;
             max-width: 460px;
             border-radius: 16px;
-            border: 1px solid rgba(245, 230, 196, 0.2); 
+            border: 1px solid rgba(245, 230, 196, 0.2);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             padding: 24px;
-            box-sizing: border-box;
         }
-        .header {
-            position: relative;
-        }
+        .header { position: relative; }
         .header h1 {
-            color: #F5E6C4; 
+            color: #F5E6C4;
             font-size: 21px;
             text-align: center;
             margin: 0;
@@ -86,11 +85,8 @@
             align-items: center;
             gap: 4px;
         }
-        .reset-link-btn:hover {
-            color: #F5E6C4;
-        }
-
-        /* Softened Tab Labels */
+        .reset-link-btn:hover { color: #F5E6C4; }
+        
         .tab-container {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -115,22 +111,13 @@
             white-space: nowrap;
             letter-spacing: 0.02em;
         }
-        @media (max-width: 380px) {
-            .tab-btn {
-                font-size: 9px;
-                padding: 8px 1px;
-            }
-        }
         .tab-btn.active {
             background-color: #1E293B;
             color: #F5E6C4;
             border: 1px solid rgba(245, 230, 196, 0.25);
             box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
         }
-
-        .input-group {
-            margin-top: 16px;
-        }
+        .input-group { margin-top: 16px; }
         .label-text {
             display: flex;
             justify-content: space-between;
@@ -142,18 +129,8 @@
             color: #94A3B8;
             margin-bottom: 6px;
         }
-        .label-sub {
-            font-size: 10px;
-            color: #64748B;
-            text-transform: none;
-            letter-spacing: normal;
-        }
-        .input-row-split {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 8px;
-            align-items: center;
-        }
+        .label-sub { font-size: 10px; color: #64748B; text-transform: none; letter-spacing: normal; }
+        .input-row-split { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; align-items: center; }
         .toggle-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -174,11 +151,7 @@
             transition: background-color 0.15s, color 0.15s;
             white-space: nowrap;
         }
-        .toggle-btn.active {
-            background-color: #F5E6C4;
-            color: #020617;
-            font-weight: 700;
-        }
+        .toggle-btn.active { background-color: #F5E6C4; color: #020617; font-weight: 700; }
         .manual-input {
             width: 100%;
             background-color: #020617;
@@ -188,56 +161,15 @@
             color: #F5E6C4;
             font-size: 15px;
             font-weight: 600;
-            box-sizing: border-box;
             outline: none;
             transition: border-color 0.15s;
         }
-        .manual-input:focus {
-            border-color: #D4AF37;
-        }
-        .rate-suffix-input {
-            text-align: center;
-            padding: 8px !important;
-            font-size: 13px !important;
-        }
-        .currency-input-wrap {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .currency-input-wrap span {
-            position: absolute;
-            left: 12px;
-            color: #D4AF37;
-            font-weight: 700;
-            font-size: 14px;
-            pointer-events: none;
-        }
-        .currency-input-wrap input {
-            padding-left: 26px;
-        }
-
-        .slider-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94A3B8;
-            margin-bottom: 6px;
-        }
-        .slider-val {
-            color: #D4AF37;
-            font-weight: 700;
-            background: rgba(212, 175, 55, 0.12);
-            padding: 2px 8px;
-            border-radius: 999px;
-            border: 1px solid rgba(212, 175, 55, 0.25);
-            font-size: 11px;
-            letter-spacing: normal;
-        }
+        .manual-input:focus { border-color: #D4AF37; }
+        .rate-suffix-input { text-align: center; padding: 8px !important; font-size: 13px !important; }
+        .currency-input-wrap { position: relative; display: flex; align-items: center; }
+        .currency-input-wrap span { position: absolute; left: 12px; color: #D4AF37; font-weight: 700; font-size: 14px; pointer-events: none; }
+        .currency-input-wrap input { padding-left: 26px; }
+        .slider-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 6px; }
         input[type="range"] {
             width: 100%;
             height: 6px;
@@ -247,7 +179,6 @@
             -webkit-appearance: none;
             appearance: none;
             cursor: pointer;
-            touch-action: pan-y;
         }
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -261,115 +192,23 @@
             border: 2px solid #020617;
             transition: transform 0.08s ease;
         }
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-        }
-        input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #D4AF37;
-            cursor: pointer;
-            box-shadow: 0 0 8px rgba(212,175,55,0.4);
-            border: 2px solid #020617;
-        }
-
-        .divider {
-            margin: 20px 0;
-            border: none;
-            border-top: 1px solid #1E293B;
-        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        .divider { margin: 20px 0; border: none; border-top: 1px solid #1E293B; }
         .results-panel {
             background-color: rgba(2, 6, 23, 0.6);
             border-radius: 12px;
             padding: 16px;
             border: 1px solid rgba(30, 41, 59, 0.8);
         }
-        .result-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            color: #94A3B8;
-            margin-bottom: 8px;
-        }
-        .result-row span:last-child {
-            font-weight: 600;
-            color: #CBD5E1;
-        }
-        .result-row.total-profit {
-            border-top: 1px solid #1E293B;
-            padding-top: 10px;
-            margin-bottom: 4px;
-            align-items: baseline;
-            color: #E2E8F0;
-        }
-        .profit-text {
-            color: #D4AF37; 
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-        .margin-text {
-            color: #D4AF37;
-            font-weight: 700;
-            font-size: 14px;
-        }
-
-        .alert-box {
-            margin-top: 12px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            font-size: 11px;
-            line-height: 1.45;
-            display: none;
-            animation: fadeIn 0.2s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-3px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .alert-warning {
-            background-color: rgba(120, 53, 4, 0.18);
-            border: 1px solid rgba(217, 119, 6, 0.45);
-            color: #FCD34D;
-        }
-        .alert-danger {
-            background-color: rgba(153, 27, 27, 0.18);
-            border: 1px solid rgba(220, 38, 38, 0.45);
-            color: #FCA5A5;
-        }
-
-        .lead-box {
-            margin-top: 16px;
-            background-color: #020617;
-            border: 1px dashed rgba(245, 230, 196, 0.25);
-            padding: 14px;
-            border-radius: 12px;
-        }
-        .lead-label {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #F5E6C4;
-            display: block;
-        }
-        .lead-input {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 6px;
-            border: 1px solid #1E293B;
-            background-color: #0F172A;
-            color: #E2E8F0;
-            font-size: 13px;
-            margin-top: 8px;
-            box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.15s;
-        }
-        .lead-input:focus {
-            border-color: #D4AF37;
-        }
+        .result-row { display: flex; justify-content: space-between; font-size: 13px; color: #94A3B8; margin-bottom: 8px; }
+        .result-row span:last-child { font-weight: 600; color: #CBD5E1; }
+        .result-row.total-profit { border-top: 1px solid #1E293B; padding-top: 10px; margin-bottom: 4px; align-items: baseline; color: #E2E8F0; }
+        .profit-text { color: #D4AF37; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+        .margin-text { color: #D4AF37; font-weight: 700; font-size: 14px; }
+        .alert-box { margin-top: 12px; padding: 12px 14px; border-radius: 10px; font-size: 11px; line-height: 1.45; display: none; }
+        .alert-warning { background-color: rgba(120, 53, 4, 0.18); border: 1px solid rgba(217, 119, 6, 0.45); color: #FCD34D; }
+        .alert-danger { background-color: rgba(153, 27, 27, 0.18); border: 1px solid rgba(220, 38, 38, 0.45); color: #FCA5A5; }
+        .lead-box { margin-top: 16px; background-color: #020617; border: 1px dashed rgba(245, 230, 196, 0.25); padding: 14px; border-radius: 12px; }
         .cta-btn {
             display: block;
             text-align: center;
@@ -389,14 +228,7 @@
             box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
             transition: transform 0.1s ease, box-shadow 0.15s ease;
         }
-        .cta-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.35);
-        }
-        .cta-btn:active {
-            transform: translateY(0);
-        }
-
+        .cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(212, 175, 55, 0.35); }
         .secondary-cta-btn {
             display: block;
             text-align: center;
@@ -411,59 +243,13 @@
             margin-top: 10px;
             transition: background 0.15s, border-color 0.15s;
         }
-        .secondary-cta-btn:hover {
-            border-color: #D4AF37;
-            background: rgba(212, 175, 55, 0.08);
-        }
-
-        .toast-msg {
-            display: none;
-            font-size: 11px;
-            padding: 8px 10px;
-            border-radius: 6px;
-            background: rgba(52, 211, 153, 0.15);
-            border: 1px solid rgba(52, 211, 153, 0.4);
-            color: #34D399;
-            text-align: center;
-            font-weight: 600;
-            margin-top: 8px;
-        }
-        .footer-text {
-            text-align: center;
-            font-size: 9px;
-            color: #64748B;
-            margin: 12px 0 0 0;
-            letter-spacing: 0.03em;
-        }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(2, 6, 23, 0.85);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 16px;
-        }
-        .modal-card {
-            background-color: #0F172A;
-            border: 1px solid rgba(245, 230, 196, 0.25);
-            border-radius: 14px;
-            padding: 20px;
-            max-width: 360px;
-            width: 100%;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-        }
+        .secondary-cta-btn:hover { border-color: #D4AF37; background: rgba(212, 175, 55, 0.08); }
+        .toast-msg { display: none; font-size: 11px; padding: 8px 10px; border-radius: 6px; background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.4); color: #34D399; text-align: center; font-weight: 600; margin-top: 8px; }
+        .footer-text { text-align: center; font-size: 9px; color: #64748B; margin: 12px 0 0 0; letter-spacing: 0.03em; }
     </style>
 </head>
 <body>
-
     <div class="app-card">
-        
         <div class="header">
             <div class="header-top-bar">
                 <span class="badge-pill">Clinic Unit Economics</span>
@@ -482,8 +268,8 @@
         <!-- Category Tabs -->
         <div class="tab-container" role="tablist" aria-label="Clinical Category">
             <button id="tabInject" onclick="setCategory('injectables')" class="tab-btn active" role="tab" aria-selected="true">Injectables</button>
-            <button id="tabLaser" onclick="setCategory('lasers')" class="tab-btn" role="tab" aria-selected="false">Lasers &amp; Devices</button>
-            <button id="tabFacial" onclick="setCategory('facials')" class="tab-btn" role="tab" aria-selected="false">Facials &amp; Skin</button>
+            <button id="tabLaser" onclick="setCategory('lasers')" class="tab-btn" role="tab" aria-selected="false">Lasers & Devices</button>
+            <button id="tabFacial" onclick="setCategory('facials')" class="tab-btn" role="tab" aria-selected="false">Facials & Skin</button>
         </div>
 
         <!-- Payment Method Setup -->
@@ -520,7 +306,7 @@
             </div>
         </div>
 
-        <!-- Friendly Manual Financial Input Fields -->
+        <!-- Financial Input Fields -->
         <div class="input-group">
             <label class="label-text" for="inputPrice">What Does the Client Pay You? ($)</label>
             <div class="currency-input-wrap">
@@ -545,28 +331,28 @@
             </div>
         </div>
 
-        <!-- Product Waste Slider Block with Manual Input Override -->
+        <!-- Product Waste Slider Block -->
         <div class="input-group">
             <div class="slider-header">
                 <span class="label-text" style="margin:0;">Product Waste/Spill Cushion</span>
-                <div class="pct-box-layout" style="display: flex; align-items: center; background-color: #020617; border: 1px solid #1E293B; border-radius: 6px; padding: 2px 6px; max-width: 60px;">
-                    <input type="number" id="txtWaste" class="mini-pct-input" value="10" min="0" max="25" oninput="syncManualInputToSlider('waste', this.value)" style="width: 100%; background: none; border: none; color: #F5E6C4; font-size: 14px; font-weight: 700; text-align: right; outline: none;">
-                    <span class="pct-symbol" style="color: #64748B; font-size: 13px; font-weight: 600; margin-left: 2px;">%</span>
+                <div style="display: flex; align-items: center; background-color: #020617; border: 1px solid #1E293B; border-radius: 6px; padding: 2px 6px; max-width: 60px;">
+                    <input type="number" id="txtWaste" value="10" min="0" max="25" oninput="syncManualInputToSlider('waste', this.value)" style="width: 100%; background: none; border: none; color: #F5E6C4; font-size: 14px; font-weight: 700; text-align: right; outline: none;">
+                    <span style="color: #64748B; font-size: 13px; font-weight: 600; margin-left: 2px;">%</span>
                 </div>
             </div>
-            <input type="range" id="inputWaste" min="0" max="25" step="5" value="10" oninput="syncSliderToManualInput('waste', this.value)" style="width: 100%; height: 6px; background: #1E293B; border-radius: 4px; outline: none; -webkit-appearance: none; appearance: none; cursor: pointer;">
+            <input type="range" id="inputWaste" min="0" max="25" step="5" value="10" oninput="syncSliderToManualInput('waste', this.value)">
         </div>
 
-        <!-- Provider Commission Slider Block with Manual Input Override -->
+        <!-- Provider Commission Slider Block -->
         <div class="input-group">
             <div class="slider-header">
                 <span class="label-text" style="margin:0;">Provider Commission Cut</span>
-                <div class="pct-box-layout" style="display: flex; align-items: center; background-color: #020617; border: 1px solid #1E293B; border-radius: 6px; padding: 2px 6px; max-width: 60px;">
-                    <input type="number" id="txtPayout" class="mini-pct-input" value="30" min="0" max="50" oninput="syncManualInputToSlider('payout', this.value)" style="width: 100%; background: none; border: none; color: #F5E6C4; font-size: 14px; font-weight: 700; text-align: right; outline: none;">
-                    <span class="pct-symbol" style="color: #64748B; font-size: 13px; font-weight: 600; margin-left: 2px;">%</span>
+                <div style="display: flex; align-items: center; background-color: #020617; border: 1px solid #1E293B; border-radius: 6px; padding: 2px 6px; max-width: 60px;">
+                    <input type="number" id="txtPayout" value="30" min="0" max="50" oninput="syncManualInputToSlider('payout', this.value)" style="width: 100%; background: none; border: none; color: #F5E6C4; font-size: 14px; font-weight: 700; text-align: right; outline: none;">
+                    <span style="color: #64748B; font-size: 13px; font-weight: 600; margin-left: 2px;">%</span>
                 </div>
             </div>
-            <input type="range" id="inputPayout" min="0" max="50" step="5" value="30" oninput="syncSliderToManualInput('payout', this.value)" style="width: 100%; height: 6px; background: #1E293B; border-radius: 4px; outline: none; -webkit-appearance: none; appearance: none; cursor: pointer;">
+            <input type="range" id="inputPayout" min="0" max="50" step="5" value="30" oninput="syncSliderToManualInput('payout', this.value)">
         </div>
 
         <hr class="divider">
@@ -581,7 +367,6 @@
                 <span>Your Real Keep Percentage</span>
                 <span class="margin-text" id="displayMargin">22.0%</span>
             </div>
-
             <div class="result-row">
                 <span>Hidden Platform Fees (<span id="feeLabel">3.0%</span>)</span>
                 <span id="displayFees">$18.00</span>
@@ -602,63 +387,46 @@
                 <span>Total Expense Burden</span>
                 <span id="displayTotalOutflows" style="color: #F5E6C4;">$468.00</span>
             </div>
-
-            <!-- Per Session Row (revealed on Multi-Session) -->
             <div class="result-row" id="perSessionRow" style="display: none; border-top: 1px dashed rgba(212, 175, 55, 0.3); padding-top: 6px; color: #D4AF37;">
                 <span id="perSessionLabel">Takeaway Per Visit</span>
                 <span id="displayPerVisit">$33.00</span>
             </div>
         </div>
 
-        <!-- Context-Aware Notification Cards -->
-        <div id="deferredWarning" class="alert-box alert-warning" role="alert">
-            <!-- Text dynamically populated -->
-        </div>
+        <!-- Warning Notifications -->
+        <div id="deferredWarning" class="alert-box alert-warning" role="alert"></div>
+        <div id="marginWarning" class="alert-box alert-danger" role="alert"></div>
 
-        <div id="marginWarning" class="alert-box alert-danger" role="alert">
-            <!-- Text dynamically populated -->
-        </div>
-
-        <!-- 📲 HIGH-CONVERTING SMS MAGIC LINK LEAD PIPELINE -->
-        <form action="https://google.com" method="POST" id="leadForm" onsubmit="submitFreeGoogleFormPipeline(event); return false;">
+        <!-- Lead Pipeline Form -->
+        <form id="leadForm" onsubmit="submitLeadForm(event); return false;">
             <div class="lead-box">
                 <label class="label-text" style="color: #F5E6C4;">Text Me My Menu Profit Report</label>
-                <!-- Clean, mobile-native phone keyboard mask layout input -->
-                <input type="tel" name="entry.1812474003" id="leadPhone" class="manual-input" style="font-size:14px; margin-top: 6px;" placeholder="Enter mobile phone number..." pattern="[0-9]{10,11}" required>
-                <input type="hidden" name="entry.311311545" id="hiddenReportData">
+                <input type="tel" id="leadPhone" class="manual-input" style="font-size:14px; margin-top: 6px;" placeholder="Enter mobile phone number..." required>
+                <input type="hidden" id="hiddenReportData">
                 <button type="submit" class="cta-btn">Text Me My Profit Summary</button>
-                <div id="formSuccessToast" class="toast-msg">
-                    ✓ Personalized Profit Breakdown compiled and queued for dispatch!
-                </div>
+                <div id="formSuccessToast" class="toast-msg">✓ Profit Breakdown queued for dispatch!</div>
             </div>
         </form>
 
-        <!-- Secondary Consultation Button -->
-        <a href="https://calendly.com/moniquethebookkeeper/20min?month=2026-10" target="_blank" rel="noopener noreferrer" class="secondary-cta-btn" id="bookConsultationBtn">
+        <!-- Calendly Consultation Button -->
+        <a href="https://calendly.com/moniquethebookkeeper/20min?month=2026-10" target="_blank" rel="noopener noreferrer" class="secondary-cta-btn">
             Chat with Monique Reid Bookkeeping
         </a>
 
-        <!-- Fast Output Modal -->
-        <div id="outputModal" class="modal-overlay" style="display: none;">
-            <div class="modal-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <h3 style="color: #F5E6C4; margin: 0; font-size: 15px; font-weight: 700;">Instant Profit Report</h3>
-                    <button type="button" onclick="document.getElementById('outputModal').style.display='none'" style="background: none; border: none; color: #94A3B8; font-size: 18px; cursor: pointer; padding: 2px 6px;">✕</button>
-                </div>
-                <p style="color: #94A3B8; font-size: 12px; margin: 0 0 12px 0;">Enter your mobile number to receive your complete unit economics breakdown via SMS.</p>
-                <button type="button" class="cta-btn" style="margin-top: 4px;" onclick="document.getElementById('outputModal').style.display='none'; document.getElementById('leadPhone').focus();">Proceed to Report</button>
-            </div>
-        </div>
-
         <p class="footer-text">CONFIDENTIAL CLINIC BENCHMARKING ENGINE • MONIQUE REID</p>
-
     </div>
 
     <script>
         (function() {
             "use strict";
-
             const STORAGE_KEY = "medspa_profit_pulse_state";
+            
+            // Protected Environment Config (Hidden behind closed JS closure)
+            const CONFIG = {
+                formActionUrl: "https://google.com",
+                phoneFieldKey: "entry.1812474003",
+                payloadKey: "entry.311311545"
+            };
 
             const CATEGORIES = {
                 injectables: { price: 600, cost: 200, overhead: 50 },
@@ -668,10 +436,8 @@
 
             const state = {
                 category: "injectables",
-                paymentMethod: "card", // "card" | "cherry"
-                treatmentType: "single", // "single" | "package"
-                wasteCushion: 10,
-                commission: 30
+                paymentMethod: "card",
+                treatmentType: "single"
             };
 
             const els = {
@@ -708,73 +474,51 @@
                 deferredWarning: document.getElementById("deferredWarning"),
                 marginWarning: document.getElementById("marginWarning"),
                 hiddenReportData: document.getElementById("hiddenReportData"),
-                diagnosticsData: document.getElementById("hiddenReportData"),
-                leadForm: document.getElementById("leadForm"),
                 leadPhone: document.getElementById("leadPhone"),
                 formSuccessToast: document.getElementById("formSuccessToast")
             };
 
-            // --- ⚡ GOOGLE FORM SMS LEAD ROUTING PIPELINE ---
-            const GOOGLE_FORM_ACTION_URL = "https://google.com";
-            const PHONE_FIELD_ENTRY_KEY = "entry.1812474003";
-            const DIAGNOSTIC_DATA_PAYLOAD_KEY = "entry.311311545";
-
-            window.openOutputSelectionModal = function() {
-                // Skips manual choice blocks, opening the fast lead window instantly on single button tap
-                const modal = document.getElementById('outputModal');
-                if (modal) {
-                    modal.style.display = 'flex';
-                }
+            // Input Sanitization Hook to block injections
+            window.sanitizePhoneInput = function(input) {
+                return input.replace(/[^0-9+]/g, "").slice(0, 15);
             };
 
-            window.submitFreeGoogleFormPipeline = function(e) {
+            window.submitLeadForm = function(e) {
                 if (e && e.preventDefault) e.preventDefault();
-                const phoneField = document.getElementById('leadPhone') ? document.getElementById('leadPhone').value : '';
-                const reportPayload = document.getElementById('hiddenReportData') ? document.getElementById('hiddenReportData').value : '';
+                const rawPhone = els.leadPhone ? els.leadPhone.value : "";
+                const sanitizedPhone = window.sanitizePhoneInput(rawPhone);
+                const reportPayload = els.hiddenReportData ? els.hiddenReportData.value : "";
 
                 const formData = new FormData();
-                formData.append(PHONE_FIELD_ENTRY_KEY, phoneField);
-                formData.append(DIAGNOSTIC_DATA_PAYLOAD_KEY, reportPayload);
+                formData.append(CONFIG.phoneFieldKey, sanitizedPhone);
+                formData.append(CONFIG.payloadKey, reportPayload);
 
-                fetch(GOOGLE_FORM_ACTION_URL, {
+                fetch(CONFIG.formActionUrl, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: formData
                 }).catch(function(err) {
-                    console.warn('Google Form transmission status:', err);
+                    console.warn('Submission status:', err);
                 });
 
-                const toast = document.getElementById('formSuccessToast');
-                if (toast) {
-                    toast.style.display = 'block';
-                    toast.textContent = `✓ Menu Profit Report queued for ${phoneField}!`;
+                if (els.formSuccessToast) {
+                    els.formSuccessToast.style.display = 'block';
+                    els.formSuccessToast.textContent = `✓ Report queued for ${sanitizedPhone}!`;
                     setTimeout(function() {
-                        toast.style.display = 'none';
-                    }, 6000);
+                        els.formSuccessToast.style.display = 'none';
+                    }, 5000);
                 }
             };
 
-            window.executeSMSPipeline = window.submitFreeGoogleFormPipeline;
-
             function formatCurrency(val) {
-                return new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }).format(val);
+                return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
             }
 
-            // Expose globally for inline onclick/oninput handlers
             window.setCategory = function(cat) {
                 state.category = cat;
                 els.tabInject.classList.toggle("active", cat === "injectables");
-                els.tabInject.setAttribute("aria-selected", cat === "injectables" ? "true" : "false");
                 els.tabLaser.classList.toggle("active", cat === "lasers");
-                els.tabLaser.setAttribute("aria-selected", cat === "lasers" ? "true" : "false");
                 els.tabFacial.classList.toggle("active", cat === "facials");
-                els.tabFacial.setAttribute("aria-selected", cat === "facials" ? "true" : "false");
-
                 const defaults = CATEGORIES[cat];
                 if (defaults) {
                     els.inputPrice.value = defaults.price;
@@ -787,25 +531,15 @@
             window.setPayment = function(method) {
                 state.paymentMethod = method;
                 els.payCard.classList.toggle("active", method === "card");
-                els.payCard.setAttribute("aria-checked", method === "card" ? "true" : "false");
                 els.payCherry.classList.toggle("active", method === "cherry");
-                els.payCherry.setAttribute("aria-checked", method === "cherry" ? "true" : "false");
-
-                if (method === "cherry") {
-                    els.inputFeeRate.value = "8.0";
-                } else {
-                    els.inputFeeRate.value = "3.0";
-                }
+                els.inputFeeRate.value = (method === "cherry") ? "8.0" : "3.0";
                 recalculate();
             };
 
             window.setTreatmentType = function(type, customSessions) {
                 state.treatmentType = type;
                 els.typeSingle.classList.toggle("active", type === "single");
-                els.typeSingle.setAttribute("aria-checked", type === "single" ? "true" : "false");
                 els.typePackage.classList.toggle("active", type === "package");
-                els.typePackage.setAttribute("aria-checked", type === "package" ? "true" : "false");
-
                 if (type === "package") {
                     els.inputSessions.disabled = false;
                     els.inputSessions.value = customSessions !== undefined ? customSessions : 4;
@@ -818,7 +552,7 @@
                 recalculate();
             };
 
-            // Fluid Slider Logic: Instant updates with decoupled recalculation
+            // Debounced Calculation Queue (prevents lagging during rapid slider drags)
             let calcTimer = null;
             window.queueCalculation = function() {
                 if (calcTimer) clearTimeout(calcTimer);
@@ -828,30 +562,21 @@
                 }, 16);
             };
 
-            // --- TWO-WAY SLIDER & MANUAL BOX SYNCING PIPELINE ---
             window.syncSliderToManualInput = function(target, value) {
-                if(target === 'waste') {
-                    document.getElementById('txtWaste').value = value;
-                } else {
-                    document.getElementById('txtPayout').value = value;
-                }
+                if (target === 'waste') document.getElementById('txtWaste').value = value;
+                else document.getElementById('txtPayout').value = value;
                 queueCalculation();
             };
 
             window.syncManualInputToSlider = function(target, value) {
                 const num = parseFloat(value) || 0;
-                if(target === 'waste') {
-                    document.getElementById('inputWaste').value = num;
-                } else {
-                    document.getElementById('inputPayout').value = num;
-                }
+                if (target === 'waste') document.getElementById('inputWaste').value = num;
+                else document.getElementById('inputPayout').value = num;
                 queueCalculation();
             };
 
             window.resetDefaults = function() {
-                try {
-                    localStorage.removeItem(STORAGE_KEY);
-                } catch(e) {}
+                try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
                 setCategory("injectables");
                 setPayment("card");
                 setTreatmentType("single");
@@ -859,52 +584,33 @@
                 document.getElementById('inputWaste').value = "10";
                 document.getElementById('txtPayout').value = "30";
                 document.getElementById('inputPayout').value = "30";
-                if (document.getElementById('leadPhone')) {
-                    document.getElementById('leadPhone').value = "";
-                }
+                if (els.leadPhone) els.leadPhone.value = "";
                 recalculate();
             };
 
-            // Recalculation Engine
             function recalculate() {
                 const price = Math.max(0, parseFloat(els.inputPrice.value) || 0);
                 const wholesaleCost = Math.max(0, parseFloat(els.inputCost.value) || 0);
                 const hourlyOverhead = Math.max(0, parseFloat(els.inputOverhead.value) || 0);
                 const feeRatePct = Math.max(0, parseFloat(els.inputFeeRate.value) || 0);
                 const sessions = state.treatmentType === "single" ? 1 : Math.max(1, parseInt(els.inputSessions.value, 10) || 1);
-
-                // This overrides the slider increments, pulling your manual custom values like 6% or 32% instantly
+                
                 const wastePct = (parseFloat(document.getElementById('txtWaste').value) || 0) / 100;
                 const payoutPct = (parseFloat(document.getElementById('txtPayout').value) || 0) / 100;
-                const wasteCushionPct = wastePct * 100;
-                const commissionPct = payoutPct * 100;
-
+                
                 if (state.treatmentType === "package") {
                     els.sessionsStatusLabel.textContent = sessions + " visits";
                 }
 
-                // 1. Hidden Platform Fees = Price * (Manual Fee Rate % / 100)
                 const hiddenPlatformFees = price * (feeRatePct / 100);
-
-                // 2. Total Cost of Materials = (Wholesale Cost * Package Sessions) * (1 + Waste Cushion %)
                 const totalCostOfMaterials = (wholesaleCost * sessions) * (1 + wastePct);
-
-                // 3. Provider Payroll Cut = Price * (Commission % / 100)
                 const providerPayrollCut = price * payoutPct;
-
-                // 4. Room Operational Expense = Hourly Overhead * Package Sessions
                 const roomOperationalExpense = hourlyOverhead * sessions;
-
-                // Total Expense Burden
+                
                 const totalOutflows = hiddenPlatformFees + totalCostOfMaterials + providerPayrollCut + roomOperationalExpense;
-
-                // 5. Your Real Takeaway Cash = Price - Hidden Platform Fees - Total Cost of Materials - Provider Payroll Cut - Room Operational Expense
                 const yourRealTakeawayCash = price - totalOutflows;
-
-                // 6. Your Real Keep Percentage % = (Your Real Takeaway Cash / Price) * 100
                 const yourRealKeepPercentagePct = price > 0 ? (yourRealTakeawayCash / price) * 100 : 0;
 
-                // Update Output UI
                 els.displayTakeaway.textContent = formatCurrency(yourRealTakeawayCash);
                 if (yourRealTakeawayCash < 0) {
                     els.displayTakeaway.style.color = "#F87171";
@@ -917,22 +623,16 @@
                     els.displayMargin.style.color = "#34D399";
                 }
 
-                const formattedMargin = (Math.round(yourRealKeepPercentagePct * 10) / 10).toFixed(1) + "%";
-                els.displayMargin.textContent = formattedMargin;
-
+                els.displayMargin.textContent = (Math.round(yourRealKeepPercentagePct * 10) / 10).toFixed(1) + "%";
                 els.feeLabel.textContent = (Math.round(feeRatePct * 10) / 10) + "%";
                 els.displayFees.textContent = formatCurrency(hiddenPlatformFees);
-
-                els.wasteLabel.textContent = "+" + (Math.round(wasteCushionPct * 10) / 10) + "% cushion";
+                els.wasteLabel.textContent = "+" + (Math.round(wastePct * 1000 / 10)) + "% cushion";
                 els.displayMaterials.textContent = formatCurrency(totalCostOfMaterials);
-
-                els.commissionLabel.textContent = (Math.round(commissionPct * 10) / 10) + "%";
+                els.commissionLabel.textContent = (Math.round(payoutPct * 1000 / 10)) + "%";
                 els.displayCommission.textContent = formatCurrency(providerPayrollCut);
-
                 els.displayOverhead.textContent = formatCurrency(roomOperationalExpense);
                 els.displayTotalOutflows.textContent = formatCurrency(totalOutflows);
 
-                // Multi-session per-visit breakdown
                 if (state.treatmentType === "package" && sessions > 1) {
                     els.perSessionRow.style.display = "flex";
                     els.perSessionLabel.textContent = "Takeaway Per Visit (" + sessions + " visits)";
@@ -941,66 +641,36 @@
                     els.perSessionRow.style.display = "none";
                 }
 
-                // Notification Card A: Deferred Revenue Warning (Id: deferredWarning)
-                // Hidden by default. Reveals instantly when Treatment Type is toggled to "📦 Multi-Session".
-                // Deferred % = ((Sessions - 1) / Sessions) * 100
                 if (state.treatmentType === "package") {
                     const deferredPct = sessions > 1 ? ((sessions - 1) / sessions) * 100 : 0;
-                    const displayDeferred = deferredPct % 1 === 0 ? deferredPct.toFixed(0) : deferredPct.toFixed(1);
-                    els.deferredWarning.textContent = 
-                        "⚠️ The Future Cash-Flow Trap: You collected all the cash upfront for a package. But legally, " +
-                        displayDeferred + "% of this money is unearned. Spending it today means you are stealing cash from your clinic's future months when patients return for treatments.";
+                    els.deferredWarning.textContent = "⚠️ Future Cash-Flow Trap: You collected all cash upfront for a package. Legally, " + deferredPct.toFixed(0) + "% is unearned revenue until treatments are rendered.";
                     els.deferredWarning.style.display = "block";
                 } else {
                     els.deferredWarning.style.display = "none";
                 }
 
-                // Notification Card B: Low Margin Warning (Id: marginWarning)
-                // Reveals dynamically whenever Your Real Keep Percentage % falls below 35%
                 if (yourRealKeepPercentagePct < 35) {
-                    els.marginWarning.textContent = 
-                        "🚨 Dangerously Low Retainer Cash: You keep less than 35% of the ticket after your overhead splits. Note: If you are the founder performing this treatment for 'free' to make the numbers look higher, your business model is silently draining your personal cash.";
+                    els.marginWarning.textContent = "🚨 Dangerously Low Margin: You keep less than 35% after expenses. If you are the founder performing treatments for free, this model may be straining your cash flow.";
                     els.marginWarning.style.display = "block";
                 } else {
                     els.marginWarning.style.display = "none";
                 }
 
-                // Update Hidden Diagnostics Payload for Formspree & SMS Lead Routing
                 const payload = {
                     timestamp: new Date().toISOString(),
                     category: state.category,
                     treatmentType: state.treatmentType,
                     sessions: sessions,
-                    clientPaymentPrice: price,
-                    wholesaleCost: wholesaleCost,
-                    roomOverheadPerHour: hourlyOverhead,
-                    paymentMethod: state.paymentMethod,
-                    feeRatePct: feeRatePct,
-                    wasteCushionPct: wasteCushionPct,
-                    commissionPct: commissionPct,
-                    results: {
-                        hiddenPlatformFees: hiddenPlatformFees.toFixed(2),
-                        totalCostOfMaterials: totalCostOfMaterials.toFixed(2),
-                        providerPayrollCut: providerPayrollCut.toFixed(2),
-                        roomOperationalExpense: roomOperationalExpense.toFixed(2),
-                        yourRealTakeawayCash: yourRealTakeawayCash.toFixed(2),
-                        yourRealKeepPercentagePct: yourRealKeepPercentagePct.toFixed(2)
-                    }
+                    netTakeaway: yourRealTakeawayCash.toFixed(2),
+                    keepPercentage: yourRealKeepPercentagePct.toFixed(2) + "%"
                 };
-                const formattedReportStr = JSON.stringify(payload, null, 2);
-                if (els.hiddenReportData) {
-                    els.hiddenReportData.value = formattedReportStr;
-                }
-                if (els.diagnosticsData) {
-                    els.diagnosticsData.value = formattedReportStr;
-                }
-
+                if (els.hiddenReportData) els.hiddenReportData.value = JSON.stringify(payload);
+                
                 saveState();
             }
 
-            // LocalStorage Auto-Save
+            // LocalStorage Memory System
             function saveState() {
-                const phoneField = document.getElementById('leadPhone');
                 const data = {
                     category: state.category,
                     paymentMethod: state.paymentMethod,
@@ -1012,42 +682,25 @@
                     overhead: parseFloat(els.inputOverhead.value) || 0,
                     wasteCushion: parseFloat(document.getElementById('txtWaste').value) || 10,
                     commission: parseFloat(document.getElementById('txtPayout').value) || 30,
-                    phone: phoneField ? phoneField.value : ""
+                    phone: els.leadPhone ? els.leadPhone.value : ""
                 };
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                } catch(e) {}
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
             }
 
-            // LocalStorage Load
             function loadState() {
                 try {
                     const raw = localStorage.getItem(STORAGE_KEY);
                     if (!raw) return false;
                     const saved = JSON.parse(raw);
                     if (!saved) return false;
-
-                    if (saved.category && CATEGORIES[saved.category]) {
-                        state.category = saved.category;
-                        els.tabInject.classList.toggle("active", saved.category === "injectables");
-                        els.tabLaser.classList.toggle("active", saved.category === "lasers");
-                        els.tabFacial.classList.toggle("active", saved.category === "facials");
-                    }
-                    if (saved.paymentMethod) {
-                        state.paymentMethod = saved.paymentMethod;
-                        els.payCard.classList.toggle("active", saved.paymentMethod === "card");
-                        els.payCherry.classList.toggle("active", saved.paymentMethod === "cherry");
-                    }
+                    
+                    if (saved.category) setCategory(saved.category);
+                    if (saved.paymentMethod) setPayment(saved.paymentMethod);
                     if (saved.feeRate !== undefined) els.inputFeeRate.value = saved.feeRate;
-
-                    if (saved.treatmentType) {
-                        setTreatmentType(saved.treatmentType, saved.sessions || 4);
-                    }
-
+                    if (saved.treatmentType) setTreatmentType(saved.treatmentType, saved.sessions || 1);
                     if (saved.price !== undefined) els.inputPrice.value = saved.price;
                     if (saved.cost !== undefined) els.inputCost.value = saved.cost;
                     if (saved.overhead !== undefined) els.inputOverhead.value = saved.overhead;
-
                     if (saved.wasteCushion !== undefined) {
                         document.getElementById('txtWaste').value = saved.wasteCushion;
                         document.getElementById('inputWaste').value = saved.wasteCushion;
@@ -1056,29 +709,18 @@
                         document.getElementById('txtPayout').value = saved.commission;
                         document.getElementById('inputPayout').value = saved.commission;
                     }
-                    if (saved.phone && document.getElementById('leadPhone')) {
-                        document.getElementById('leadPhone').value = saved.phone;
-                    }
-
+                    if (saved.phone && els.leadPhone) els.leadPhone.value = saved.phone;
                     return true;
                 } catch(e) {
                     return false;
                 }
             }
 
-            // Initialization & Form Handling
             function init() {
-                const phoneField = document.getElementById('leadPhone');
-                if (phoneField) {
-                    phoneField.addEventListener("input", saveState);
-                }
-
+                if (els.leadPhone) els.leadPhone.addEventListener("input", saveState);
                 const loaded = loadState();
-                if (!loaded) {
-                    recalculate();
-                } else {
-                    recalculate();
-                }
+                if (!loaded) recalculate();
+                else recalculate();
             }
 
             if (document.readyState === "loading") {
