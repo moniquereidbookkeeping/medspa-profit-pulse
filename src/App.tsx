@@ -22,8 +22,14 @@ export default function App() {
   const [commissionPct, setCommissionPct] = useState<number>(30);
 
   const [phone, setPhone] = useState<string>("");
+  const [ownerName, setOwnerName] = useState("");
+  const [practiceName, setPracticeName] = useState("");
+  const [contactConsent, setContactConsent] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [smsReady, setSmsReady] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const [toastVisible, setToastVisible] = useState<boolean>(false);
   const [, startTransition] = useTransition();
 
   // Load from LocalStorage on mount
@@ -42,7 +48,7 @@ export default function App() {
         if (parsed.hourlyOverhead !== undefined) setHourlyOverhead(parsed.hourlyOverhead);
         if (parsed.wasteCushionPct !== undefined) setWasteCushionPct(parsed.wasteCushionPct);
         if (parsed.commissionPct !== undefined) setCommissionPct(parsed.commissionPct);
-        if (parsed.phone) setPhone(parsed.phone);
+        // Contact information is intentionally not persisted in browser storage.
       }
     } catch (e) {
       console.warn("Could not load saved state", e);
@@ -54,13 +60,13 @@ export default function App() {
     try {
       const stateToSave = {
         category, paymentMethod, feeRatePct, treatmentType, sessions,
-        price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct, phone
+        price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch (e) {
       console.warn("Could not save state", e);
     }
-  }, [category, paymentMethod, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct, phone]);
+  }, [category, paymentMethod, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct]);
 
   const metrics = calculateProfitPulseMetrics({
     price,
@@ -103,25 +109,93 @@ export default function App() {
     setWasteCushionPct(10);
     setCommissionPct(30);
     setPhone("");
+    setOwnerName("");
+    setPracticeName("");
+    setFeedback("");
+    setContactConsent(false);
+    setSmsReady(false);
+    setSaveMessage("");
     setIsSubmitted(false);
   };
 
-  const handleLeadSubmit = (e: React.FormEvent) => {
+  const makeReport = () => [
+    'MEDSPA PROFIT PULSE — Treatment Snapshot',
+    `Category: ${category}`,
+    `Treatment price: $${price.toFixed(2)}`,
+    `Processing fees: $${metrics.hiddenPlatformFees.toFixed(2)}`,
+    `Materials (incl. waste): $${metrics.totalCostOfMaterials.toFixed(2)}`,
+    `Provider compensation: $${metrics.providerPayrollCut.toFixed(2)}`,
+    `Room overhead: $${metrics.roomOperationalExpense.toFixed(2)}`,
+    `Total costs: $${metrics.totalOutflows.toFixed(2)}`,
+    `Estimated contribution: $${metrics.yourRealTakeawayCash.toFixed(2)}`,
+    `Contribution margin: ${metrics.yourRealKeepPercentagePct}%`,
+    treatmentType === 'package' ? `Package sessions: ${sessions}; per-session contribution: $${metrics.takeawayPerVisit.toFixed(2)}` : '',
+    'Estimate from your inputs, not verified net profit. — Monique Reid Bookkeeping'
+  ].filter(Boolean).join('\n');
+
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const sanitizedPhone = phone.replace(/[^0-9+]/g, "").slice(0, 15);
-    if (!sanitizedPhone || sanitizedPhone.length < 7) {
-      alert("Please enter a valid mobile phone number.");
+    if (saving) return;
+    const digits = phone.replace(/\D/g, '');
+    if (phone.trim() && (digits.length < 10 || digits.length > 15)) {
+      setSaveMessage('Use a valid mobile number, or leave it blank.');
       return;
     }
+    if (contactConsent && !phone.trim()) {
+      setSaveMessage('Enter a mobile number if you want to opt in to follow-up.');
+      return;
+    }
+    setSaving(true);
+    setSaveMessage('Saving your snapshot…');
+    try {
+      const reportId = crypto.randomUUID();
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportId, ownerName, practiceName, phone: phone.trim(),
+          contactConsent, feedback, category, paymentMethod,
+          treatmentType, sessions, price, wholesaleCost,
+          wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct,
+          totalCostOfMaterials: metrics.totalCostOfMaterials,
+          hiddenPlatformFees: metrics.hiddenPlatformFees,
+          providerPayrollCut: metrics.providerPayrollCut,
+          roomOperationalExpense: metrics.roomOperationalExpense,
+          totalOutflows: metrics.totalOutflows,
+          contribution: metrics.yourRealTakeawayCash,
+          margin: metrics.yourRealKeepPercentagePct,
+          smsStatus: 'Prepared', source: 'MedSpa Profit Pulse'
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.saved !== true) throw new Error('Save not confirmed');
+      setSmsReady(true);
+      setIsSubmitted(true);
+      setSaveMessage('Saved to your report tracker. Your report is ready below.');
+    } catch (error) {
+      console.error('Report save failed', error);
+      // Access to the report must remain available even during an outage.
+      setSmsReady(true);
+      setSaveMessage('Could not save the report to our tracker. You can still copy or text your results below, or retry saving.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    const summaryString = `MedSpa Profit Report:\nCategory: ${category.toUpperCase()}\nTakeaway: $${metrics.yourRealTakeawayCash.toFixed(2)}\nMargin: ${metrics.yourRealKeepPercentagePct}%\nClient Phone: ${sanitizedPhone}`;
+  const handleCopyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(makeReport());
+      setSaveMessage('Report copied. Open your messaging app and paste it.');
+    } catch {
+      setSaveMessage('Copy is unavailable in this browser. Please select and copy the report text below.');
+    }
+  };
 
-    // Opens their default SMS or email app pre-populated with the exact report breakdown (Free & 100% Reliable)
-    const smsUrl = `sms:?body=${encodeURIComponent(summaryString)}`;
-    window.location.href = smsUrl;
-
-    setIsSubmitted(true);
-    setToastVisible(true);
+  const handleOpenSms = () => {
+    // An SMS URI opens the owner's messaging app; only the owner can send the SMS.
+    // Not all iOS/Android configurations allow prefilling the body.
+    window.location.href = `sms:?body=${encodeURIComponent(makeReport())}`;
+    setSaveMessage('Your messaging app was requested. If the report is not prefilled, use Copy My Report.');
   };
 
   const formatCurrency = (val: number) => {
@@ -322,48 +396,38 @@ export default function App() {
         </div>
       )}
 
-      {/* Lead Capture Form & Interactive Success Window */}
-      {!isSubmitted ? (
+      {/* Optional owner information and report preparation */}
+      <div className="lead-box">
         <form onSubmit={handleLeadSubmit}>
-          <div className="lead-box">
-            <label className="label-text" style={{ color: '#F5E6C4' }}>Text Me My Menu Profit Report</label>
-            <input 
-              type="tel" 
-              value={phone} 
-              onChange={(e) => setPhone(e.target.value)} 
-              className="manual-input" 
-              style={{ fontSize: '14px', marginTop: '6px' }} 
-              placeholder="Enter mobile phone number..." 
-              required 
-            />
-            <button type="submit" className="cta-btn">Text Me My Profit Summary</button>
-            {toastVisible && <div className="toast-msg" style={{ display: 'block' }}>✓ Profit Breakdown prepared!</div>}
-          </div>
+          <label className="label-text" style={{ color: '#F5E6C4' }}>Save & Prepare My Profit Report</label>
+          <p style={{ fontSize: '12px', color: '#CBD5E1' }}>Results are visible above. Contact details are optional unless you opt into follow-up.</p>
+          <input className="manual-input" style={{ marginTop: '6px' }} value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Your name (optional)" maxLength={100} />
+          <input className="manual-input" style={{ marginTop: '6px' }} value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice name (optional)" maxLength={120} />
+          <input type="tel" className="manual-input" style={{ marginTop: '6px' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile number (optional)" maxLength={25} />
+          <input className="manual-input" style={{ marginTop: '6px' }} value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this calculator? (optional)" maxLength={400} />
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '12px', color: '#E2E8F0' }}>
+            <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} />
+            I agree that Monique Reid Bookkeeping may contact me at the number provided about my calculator feedback and bookkeeping services. This is optional and separate from getting my report.
+          </label>
+          <button type="submit" disabled={saving} className="cta-btn">{saving ? 'Saving…' : isSubmitted ? 'Save Another Snapshot' : 'Save & Prepare My Report'}</button>
         </form>
-      ) : (
-        <div className="lead-box" style={{ background: 'rgba(6, 78, 59, 0.25)', borderColor: 'rgba(52, 211, 153, 0.4)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34D399', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: '999px', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
-              Report Ready to Dispatch!
-            </span>
-          </div>
-          <p style={{ fontSize: '12px', color: '#E2E8F0', textAlign: 'center', margin: '8px 0 12px 0', lineHeight: 1.4 }}>
-            Your messaging app has opened with your custom unit economics report. Ready to lock in your higher margin menu?
-          </p>
-          <a href="https://calendly.com" target="_blank" rel="noopener noreferrer" className="cta-btn" style={{ textDecoration: 'none', marginTop: 0, background: 'linear-gradient(90deg, #34D399, #6EE7B7, #34D399)', color: '#020617', textAlign: 'center' }}>
-            Schedule Your Diagnostic Review Call ⚡
-          </a>
-          <button type="button" onClick={() => { setIsSubmitted(false); setPhone(""); }} className="secondary-cta-btn" style={{ marginTop: '8px', width: '100%', cursor: 'pointer' }}>
-            Calculate Another Service
-          </button>
+        {saveMessage && <p role="status" style={{ marginTop: '10px', fontSize: '12px', color: '#F5E6C4' }}>{saveMessage}</p>}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+          <button type="button" className="secondary-cta-btn" onClick={handleOpenSms}>Open Text App</button>
+          <button type="button" className="secondary-cta-btn" onClick={handleCopyReport}>Copy My Report</button>
         </div>
-      )}
+        {smsReady && <p style={{ fontSize: '11px', color: '#CBD5E1' }}>Text delivery is not automatic; review and send inside your messaging app.</p>}
+        <details style={{ marginTop: '8px', color: '#E2E8F0', fontSize: '12px' }}>
+          <summary>View report text</summary>
+          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', overflowWrap: 'anywhere' }}>{makeReport()}</pre>
+        </details>
+      </div>
 
-      <a href="https://calendly.com" target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
+      <a href="https://www.moniquereidbookkeeping.com/" target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
         Chat with Monique Reid Bookkeeping
       </a>
 
-      <p className="footer-text">CONFIDENTIAL CLINIC BENCHMARKING ENGINE • MONIQUE REID</p>
+      <p className="footer-text">ESTIMATES BASED ON YOUR INPUTS • MONIQUE REID BOOKKEEPING</p>
     </div>
   );
 }
