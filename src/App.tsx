@@ -174,7 +174,6 @@ export default function App() {
       setSaveMessage('Saved to your report tracker. Your report is ready below.');
     } catch (error) {
       console.error('Report save failed', error);
-      // Access to the report must remain available even during an outage.
       setSmsReady(true);
       setSaveMessage('Could not save the report to our tracker. You can still copy or text your results below, or retry saving.');
     } finally {
@@ -192,8 +191,6 @@ export default function App() {
   };
 
   const handleOpenSms = () => {
-    // An SMS URI opens the owner's messaging app; only the owner can send the SMS.
-    // Not all iOS/Android configurations allow prefilling the body.
     window.location.href = `sms:?body=${encodeURIComponent(makeReport())}`;
     setSaveMessage('Your messaging app was requested. If the report is not prefilled, use Copy My Report.');
   };
@@ -424,7 +421,7 @@ export default function App() {
       </div>
 
       <a href="https://www.moniquereidbookkeeping.com/" target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
-        Chat with Monique Reid Bookkeeping
+        Chat with [Monique Reid Bookkeeping](https://www.moniquereidbookkeeping.com/)
       </a>
 
       <p className="footer-text">ESTIMATES BASED ON YOUR INPUTS • MONIQUE REID BOOKKEEPING</p>
