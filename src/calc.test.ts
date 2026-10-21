@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateProfitPulseMetrics } from './calc.ts';
+import { calculateProfitPulseMetrics, PLATFORM_DEFAULT_FEES } from './calc';
 
 test('calculates single-visit injectables and current low-contribution warning', () => {
   const result = calculateProfitPulseMetrics({
@@ -27,6 +27,7 @@ test('calculates single-visit injectables and current low-contribution warning',
   assert.match(result.marginWarningText, /not an industry benchmark/);
   assert.equal(result.showDeferredWarning, false);
   assert.equal(result.deferredPct, 0);
+  assert.equal(result.alertLevel, 'red');
 });
 
 test('calculates a four-session prepaid package and current package caution', () => {
@@ -55,6 +56,7 @@ test('calculates a four-session prepaid package and current package caution', ()
   assert.match(result.deferredWarningText, /some revenue may need to be deferred/);
   assert.match(result.deferredWarningText, /applicable rules/);
   assert.equal(result.showMarginWarning, true);
+  assert.equal(result.alertLevel, 'red');
 });
 
 test('does not show a package deferral warning for one-session packages', () => {
@@ -71,4 +73,20 @@ test('does not show a package deferral warning for one-session packages', () => 
 
   assert.equal(result.deferredPct, 0);
   assert.equal(result.showDeferredWarning, false);
+});
+
+test('validates platform default fee mappings and green alert level for high contribution', () => {
+  const result = calculateProfitPulseMetrics({
+    price: 1000,
+    wholesaleCost: 50,
+    hourlyOverhead: 30,
+    feeRatePct: PLATFORM_DEFAULT_FEES['Cherry Financing (6-No-Interest Plan)' in PLATFORM_DEFAULT_FEES ? 'Cherry Financing (6-Month No-Interest Plan)' : 'Regular Card Processing (Stripe, Vagaro, Square)'],
+    sessions: 1,
+    treatmentType: 'single',
+    wasteCushionPct: 0,
+    commissionPct: 10,
+  });
+
+  assert.ok(result.yourRealKeepPercentagePct >= 40);
+  assert.equal(result.alertLevel, 'green');
 });
