@@ -243,7 +243,12 @@ input[type="range"]::-moz-range-thumb {
 .result-row.total-profit { border-top: 1px solid #1E293B; padding-top: 10px; margin-bottom: 4px; align-items: baseline; color: #E2E8F0; }
 .profit-text { color: #D4AF37; font-size: 23px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; }
 .margin-text { color: #D4AF37; font-weight: 700; font-size: 14px; }
+
+/* Alert Box Styling for 3-tier Contribution Thresholds */
 .alert-box { margin-top: 12px; padding: 12px 14px; border-radius: 10px; font-size: 12px; line-height: 1.55; }
+.alert-green { background: rgba(52, 211, 153, 0.09); border: 1px solid rgba(52, 211, 153, 0.35); color: #34D399; }
+.alert-amber { background: rgba(245, 158, 11, 0.09); border: 1px solid rgba(245, 158, 11, 0.35); color: #FCD34D; }
+.alert-red { background: rgba(248, 113, 113, 0.08); border: 1px solid rgba(248, 113, 113, 0.35); color: #FCA5A5; }
 .alert-warning { background: rgba(245, 158, 11, 0.09); border: 1px solid rgba(245, 158, 11, 0.35); color: #FCD34D; }
 .alert-danger { background: rgba(248, 113, 113, 0.08); border: 1px solid rgba(248, 113, 113, 0.35); color: #FCA5A5; }
 
@@ -293,6 +298,102 @@ button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px soli
 .footer-text { color: #64748B; font-size: 9px; line-height: 1.5; text-align: center; letter-spacing: 0.12em; margin: 18px 0 0; }
 pre { overflow-x: auto; }
 
+/* Print-Only Professional CPA-Ready Diagnostic Report Styles */
+.print-header-brand {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  
+  #root {
+    min-height: auto !important;
+    align-items: stretch !important;
+  }
+
+  .app-card {
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-header-brand {
+    display: block;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .print-header-brand h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 0.05em;
+    margin: 0;
+  }
+
+  .print-header-brand p {
+    font-size: 11px;
+    color: #475569;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .print-divider {
+    border: none;
+    border-top: 1px solid #cbd5e1;
+    margin: 10px 0;
+  }
+
+  /* Hide interactive controls, dropdowns, buttons, forms, and tabs during print */
+  .header-top-bar,
+  .tab-container,
+  .toggle-container,
+  button,
+  input[type="range"],
+  form,
+  .secondary-cta-btn,
+  .reset-link-btn,
+  select.manual-input {
+    display: none !important;
+  }
+
+  .results-panel {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+  }
+
+  .result-row {
+    color: #334155 !important;
+  }
+
+  .result-row > span:last-child {
+    color: #0f172a !important;
+  }
+
+  .alert-box {
+    border: 1px solid #cbd5e1 !important;
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+  }
+
+  .footer-text {
+    color: #64748b !important;
+    font-size: 9px !important;
+    margin-top: 24px !important;
+  }
+}
+
 @media (max-width: 390px) {
   body { padding: 10px; }
   #root { min-height: calc(100vh - 20px); }
@@ -309,4 +410,3 @@ pre { overflow-x: auto; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
-
