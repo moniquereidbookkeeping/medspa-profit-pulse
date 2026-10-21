@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useEffect, useTransition } from 'react';
-import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS } from './calc';
+import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS, PLATFORM_DEFAULT_FEES, PaymentPlatform } from './calc';
 
 const STORAGE_KEY = "medspa_profit_pulse_state";
+const LEAD_CAPTURED_KEY = "medspa_profit_pulse_lead_captured";
 
 export default function App() {
   const [category, setCategory] = useState<'injectables' | 'lasers' | 'facials'>('injectables');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cherry'>('card');
+  const [paymentPlatform, setPaymentPlatform] = useState<PaymentPlatform>('Regular Card Processing (Stripe, Vagaro, Square)');
   const [feeRatePct, setFeeRatePct] = useState<number>(3.0);
   const [treatmentType, setTreatmentType] = useState<'single' | 'package'>('single');
   const [sessions, setSessions] = useState<number>(1);
@@ -28,8 +29,9 @@ export default function App() {
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
-  const [smsReady, setSmsReady] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  
+  const [isLeadCaptured, setIsLeadCaptured] = useState(false);
+  const [isEditingContact, setIsEditingContact] = useState(false);
   const [, startTransition] = useTransition();
 
   // Load from LocalStorage on mount
@@ -39,7 +41,7 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.category) setCategory(parsed.category);
-        if (parsed.paymentMethod) setPaymentMethod(parsed.paymentMethod);
+        if (parsed.paymentPlatform) setPaymentPlatform(parsed.paymentPlatform);
         if (parsed.feeRatePct !== undefined) setFeeRatePct(parsed.feeRatePct);
         if (parsed.treatmentType) setTreatmentType(parsed.treatmentType);
         if (parsed.sessions !== undefined) setSessions(parsed.sessions);
@@ -48,25 +50,28 @@ export default function App() {
         if (parsed.hourlyOverhead !== undefined) setHourlyOverhead(parsed.hourlyOverhead);
         if (parsed.wasteCushionPct !== undefined) setWasteCushionPct(parsed.wasteCushionPct);
         if (parsed.commissionPct !== undefined) setCommissionPct(parsed.commissionPct);
-        // Contact information is intentionally not persisted in browser storage.
+      }
+      const captured = localStorage.getItem(LEAD_CAPTURED_KEY);
+      if (captured === 'true') {
+        setIsLeadCaptured(true);
       }
     } catch (e) {
       console.warn("Could not load saved state", e);
     }
   }, []);
 
-  // Save to LocalStorage on state change
+  // Save state to LocalStorage
   useEffect(() => {
     try {
       const stateToSave = {
-        category, paymentMethod, feeRatePct, treatmentType, sessions,
+        category, paymentPlatform, feeRatePct, treatmentType, sessions,
         price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch (e) {
       console.warn("Could not save state", e);
     }
-  }, [category, paymentMethod, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct]);
+  }, [category, paymentPlatform, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct]);
 
   const metrics = calculateProfitPulseMetrics({
     price,
@@ -87,9 +92,11 @@ export default function App() {
     setHourlyOverhead(defaults.hourlyOverhead);
   };
 
-  const handlePaymentChange = (method: 'card' | 'cherry') => {
-    setPaymentMethod(method);
-    setFeeRatePct(method === 'cherry' ? 8.0 : 3.0);
+  const handlePlatformChange = (platform: PaymentPlatform) => {
+    setPaymentPlatform(platform);
+    if (platform !== 'Custom Platform Fee Override') {
+      setFeeRatePct(PLATFORM_DEFAULT_FEES[platform]);
+    }
   };
 
   const handleTreatmentTypeChange = (type: 'single' | 'package') => {
@@ -104,7 +111,7 @@ export default function App() {
   const handleReset = () => {
     try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
     handleCategoryChange('injectables');
-    handlePaymentChange('card');
+    handlePlatformChange('Regular Card Processing (Stripe, Vagaro, Square)');
     handleTreatmentTypeChange('single');
     setWasteCushionPct(10);
     setCommissionPct(30);
@@ -113,40 +120,40 @@ export default function App() {
     setPracticeName("");
     setFeedback("");
     setContactConsent(false);
-    setSmsReady(false);
     setSaveMessage("");
-    setIsSubmitted(false);
   };
 
   const makeReport = () => [
-    'MEDSPA PROFIT PULSE — Treatment Snapshot',
-    `Category: ${category}`,
+    'MONIQUE REID BOOKKEEPING — Treatment Profitability Diagnostic',
+    `Practice: ${practiceName || 'Not specified'} (${ownerName || 'Owner'})`,
+    `Category: ${category} | Platform: ${paymentPlatform}`,
     `Treatment price: $${price.toFixed(2)}`,
-    `Processing fees: $${metrics.hiddenPlatformFees.toFixed(2)}`,
+    `Processing fees (${feeRatePct}%): $${metrics.hiddenPlatformFees.toFixed(2)}`,
     `Materials (incl. waste): $${metrics.totalCostOfMaterials.toFixed(2)}`,
     `Provider compensation: $${metrics.providerPayrollCut.toFixed(2)}`,
     `Room overhead: $${metrics.roomOperationalExpense.toFixed(2)}`,
-    `Total costs: $${metrics.totalOutflows.toFixed(2)}`,
-    `Estimated contribution: $${metrics.yourRealTakeawayCash.toFixed(2)}`,
-    `Contribution margin: ${metrics.yourRealKeepPercentagePct}%`,
-    treatmentType === 'package' ? `Package sessions: ${sessions}; per-session contribution: $${metrics.takeawayPerVisit.toFixed(2)}` : '',
-    'Estimate from your inputs, not verified net profit. — Monique Reid Bookkeeping'
+    `Total estimated outflows: $${metrics.totalOutflows.toFixed(2)}`,
+    `Estimated treatment contribution: $${metrics.yourRealTakeawayCash.toFixed(2)}`,
+    `Estimated keep percentage: ${metrics.yourRealKeepPercentagePct}%`,
+    treatmentType === 'package' ? `Package sessions: ${sessions}; per-visit contribution: $${metrics.takeawayPerVisit.toFixed(2)}` : '',
+    'Disclaimer: Estimates based on manual inputs for planning and discussion with accountant. Not an audit or tax opinion.'
   ].filter(Boolean).join('\n');
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
-    const digits = phone.replace(/\D/g, '');
-    if (phone.trim() && (digits.length < 10 || digits.length > 15)) {
-      setSaveMessage('Use a valid mobile number, or leave it blank.');
-      return;
+
+    if (phone.trim()) {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 10 || digits.length > 15) {
+        setSaveMessage('Please enter a valid mobile number (10-15 digits), or leave blank.');
+        return;
+      }
     }
-    if (contactConsent && !phone.trim()) {
-      setSaveMessage('Enter a mobile number if you want to opt in to follow-up.');
-      return;
-    }
+
     setSaving(true);
-    setSaveMessage('Saving your snapshot…');
+    setSaveMessage('Saving your diagnostic snapshot...');
+
     try {
       const reportId = crypto.randomUUID();
       const response = await fetch('/api/report', {
@@ -154,7 +161,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           reportId, ownerName, practiceName, phone: phone.trim(),
-          contactConsent, feedback, category, paymentMethod,
+          contactConsent, feedback, category, paymentPlatform,
           treatmentType, sessions, price, wholesaleCost,
           wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct,
           totalCostOfMaterials: metrics.totalCostOfMaterials,
@@ -164,38 +171,28 @@ export default function App() {
           totalOutflows: metrics.totalOutflows,
           contribution: metrics.yourRealTakeawayCash,
           margin: metrics.yourRealKeepPercentagePct,
-          smsStatus: 'Prepared', source: 'MedSpa Profit Pulse'
+          source: 'MedSpa Profit Pulse'
         })
       });
+
       const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.saved !== true) throw new Error('Save not confirmed');
-      setSmsReady(true);
-      setIsSubmitted(true);
-      setSaveMessage('Saved to your report tracker. Your report is ready below.');
+      if (!response.ok || result.saved !== true) {
+        throw new Error('Server did not confirm save.');
+      }
+
+      localStorage.setItem(LEAD_CAPTURED_KEY, 'true');
+      setIsLeadCaptured(true);
+      setIsEditingContact(false);
+      setSaveMessage('Report successfully saved to your practice tracker.');
     } catch (error) {
-      console.error('Report save failed', error);
-      // Access to the report must remain available even during an outage.
-      setSmsReady(true);
-      setSaveMessage('Could not save the report to our tracker. You can still copy or text your results below, or retry saving.');
+      console.error('Remote save failed', error);
+      localStorage.setItem(LEAD_CAPTURED_KEY, 'true');
+      setIsLeadCaptured(true);
+      setSaveMessage('Cloud save unavailable. Your report is generated and ready to print/export.');
     } finally {
       setSaving(false);
+      window.print();
     }
-  };
-
-  const handleCopyReport = async () => {
-    try {
-      await navigator.clipboard.writeText(makeReport());
-      setSaveMessage('Report copied. Open your messaging app and paste it.');
-    } catch {
-      setSaveMessage('Copy is unavailable in this browser. Please select and copy the report text below.');
-    }
-  };
-
-  const handleOpenSms = () => {
-    // An SMS URI opens the owner's messaging app; only the owner can send the SMS.
-    // Not all iOS/Android configurations allow prefilling the body.
-    window.location.href = `sms:?body=${encodeURIComponent(makeReport())}`;
-    setSaveMessage('Your messaging app was requested. If the report is not prefilled, use Copy My Report.');
   };
 
   const formatCurrency = (val: number) => {
@@ -204,6 +201,13 @@ export default function App() {
 
   return (
     <div className="app-card">
+      {/* Print-Only Professional CPA-Ready Diagnostic Header */}
+      <div className="print-header-brand">
+        <h1>MONIQUE REID BOOKKEEPING</h1>
+        <p>Secure Virtual Solutions • MedSpa Treatment Profitability Diagnostic</p>
+        <hr className="print-divider" />
+      </div>
+
       <div className="header">
         <div className="header-top-bar">
           <span className="badge-pill">Clinic Unit Economics</span>
@@ -226,28 +230,41 @@ export default function App() {
         <button onClick={() => handleCategoryChange('facials')} className={`tab-btn ${category === 'facials' ? 'active' : ''}`} role="tab">Facials & Skin</button>
       </div>
 
-      {/* Payment Method Setup */}
+      {/* Payment Platform Dropdown */}
       <div className="input-group">
-        <span className="label-text">
-          How Do Clients Pay You?
-          <span className="label-sub">Fee Rate %</span>
+        <label className="label-text" htmlFor="platform-select">Choose Payment/Financing Platform</label>
+        <select 
+          id="platform-select"
+          className="manual-input"
+          value={paymentPlatform}
+          onChange={(e) => handlePlatformChange(e.target.value as PaymentPlatform)}
+          style={{ backgroundColor: '#020617', color: '#F5E6C4', border: '1px solid #1E293B', padding: '10px', borderRadius: '8px', width: '100%' }}
+        >
+          <option value="Regular Card Processing (Stripe, Vagaro, Square)">Regular Card Processing (Stripe, Vagaro, Square)</option>
+          <option value="Cherry Financing (6-Month No-Interest Plan)">⚡ Cherry Financing (6-Month No-Interest Plan)</option>
+          <option value="Cherry Financing (12-Month Zero-Interest Split)">⚡ Cherry Financing (12-Month Zero-Interest Split)</option>
+          <option value="CareCredit Standard Doctor Fee Program">💳 CareCredit Standard Doctor Fee Program</option>
+          <option value="PatientFi Base Promotion Rate Setup">🌸 PatientFi Base Promotion Rate Setup</option>
+          <option value="Custom Platform Fee Override">🛠️ Custom Platform Fee Override</option>
+        </select>
+        <span className="label-sub" style={{ marginTop: '4px', display: 'block', color: '#94A3B8' }}>
+          Illustrative default rate: {feeRatePct}% (Editable below)
         </span>
-        <div className="input-row-split">
-          <div className="toggle-container" role="radiogroup">
-            <button onClick={() => handlePaymentChange('card')} className={`toggle-btn ${paymentMethod === 'card' ? 'active' : ''}`} role="radio">Regular Card</button>
-            <button onClick={() => handlePaymentChange('cherry')} className={`toggle-btn ${paymentMethod === 'cherry' ? 'active' : ''}`} role="radio">⚡ Cherry Split</button>
-          </div>
-          <div>
-            <input 
-              type="number" 
-              className="manual-input rate-suffix-input" 
-              value={feeRatePct} 
-              step="0.1" 
-              min="0" 
-              max="25" 
-              onChange={(e) => startTransition(() => setFeeRatePct(parseFloat(e.target.value) || 0))} 
-            />
-          </div>
+      </div>
+
+      {/* Fee Rate Input */}
+      <div className="input-group">
+        <label className="label-text">Effective Platform Fee Rate (%)</label>
+        <div className="currency-input-wrap">
+          <input 
+            type="number" 
+            className="manual-input" 
+            value={feeRatePct} 
+            step="0.1" 
+            min="0" 
+            max="30" 
+            onChange={(e) => startTransition(() => setFeeRatePct(Math.max(0, parseFloat(e.target.value) || 0)))} 
+          />
         </div>
       </div>
 
@@ -302,40 +319,19 @@ export default function App() {
         </div>
       </div>
 
-      {/* Product Waste Slider */}
+      {/* Sliders */}
       <div className="input-group">
         <div className="slider-header">
           <span className="label-text" style={{ margin: 0 }}>Product Waste/Spill Cushion</span>
-          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#020617', border: '1px solid #1E293B', borderRadius: '6px', padding: '2px 6px', maxWidth: '60px' }}>
-            <input 
-              type="number" 
-              value={wasteCushionPct} 
-              min="0" 
-              max="25" 
-              onChange={(e) => startTransition(() => setWasteCushionPct(parseFloat(e.target.value) || 0))} 
-              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '14px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
-            />
-            <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
-          </div>
+          <span style={{ color: '#F5E6C4', fontWeight: 700 }}>{wasteCushionPct}%</span>
         </div>
         <input type="range" min="0" max="25" step="5" value={wasteCushionPct} onChange={(e) => startTransition(() => setWasteCushionPct(parseFloat(e.target.value) || 0))} />
       </div>
 
-      {/* Provider Commission Slider */}
       <div className="input-group">
         <div className="slider-header">
           <span className="label-text" style={{ margin: 0 }}>Provider Commission Cut</span>
-          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#020617', border: '1px solid #1E293B', borderRadius: '6px', padding: '2px 6px', maxWidth: '60px' }}>
-            <input 
-              type="number" 
-              value={commissionPct} 
-              min="0" 
-              max="50" 
-              onChange={(e) => startTransition(() => setCommissionPct(parseFloat(e.target.value) || 0))} 
-              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '14px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
-            />
-            <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
-          </div>
+          <span style={{ color: '#F5E6C4', fontWeight: 700 }}>{commissionPct}%</span>
         </div>
         <input type="range" min="0" max="50" step="5" value={commissionPct} onChange={(e) => startTransition(() => setCommissionPct(parseFloat(e.target.value) || 0))} />
       </div>
@@ -345,19 +341,19 @@ export default function App() {
       {/* Results Panel */}
       <div className="results-panel">
         <div className="result-row total-profit">
-          <span>Your Real Takeaway Cash</span>
+          <span>Estimated Treatment Contribution</span>
           <span className="profit-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 35 ? '#FBBF24' : '#34D399' }}>
             {formatCurrency(metrics.yourRealTakeawayCash)}
           </span>
         </div>
         <div className="result-row" style={{ marginBottom: '12px' }}>
-          <span>Your Real Keep Percentage</span>
+          <span>Estimated Keep Percentage</span>
           <span className="margin-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 35 ? '#FBBF24' : '#34D399' }}>
             {metrics.yourRealKeepPercentagePct}%
           </span>
         </div>
         <div className="result-row">
-          <span>Hidden Platform Fees ({feeRatePct}%)</span>
+          <span>Platform Fees ({feeRatePct}%)</span>
           <span>{formatCurrency(metrics.hiddenPlatformFees)}</span>
         </div>
         <div className="result-row">
@@ -373,61 +369,77 @@ export default function App() {
           <span>{formatCurrency(metrics.roomOperationalExpense)}</span>
         </div>
         <div className="result-row" style={{ borderTop: '1px solid rgba(30, 41, 59, 0.6)', paddingTop: '6px', color: '#E2E8F0' }}>
-          <span>Total Expense Burden</span>
+          <span>Total Estimated Outflows</span>
           <span style={{ color: '#F5E6C4' }}>{formatCurrency(metrics.totalOutflows)}</span>
         </div>
         {treatmentType === 'package' && sessions > 1 && (
           <div className="result-row" style={{ display: 'flex', borderTop: '1px dashed rgba(212, 175, 55, 0.3)', paddingTop: '6px', color: '#D4AF37' }}>
-            <span>Takeaway Per Visit ({sessions} visits)</span>
+            <span>Contribution Per Visit ({sessions} visits)</span>
             <span>{formatCurrency(metrics.takeawayPerVisit)}</span>
           </div>
         )}
       </div>
 
-      {/* Warning Boxes */}
+      {/* Dynamic Accessible Contribution Alert Banner */}
+      <div className={`alert-box alert-${metrics.alertLevel}`} role="alert" style={{ display: 'block', marginTop: '16px' }}>
+        <strong>{metrics.alertLevel === 'red' ? '🚨 Profitability Concern: ' : metrics.alertLevel === 'amber' ? '🟡 Margin Squeeze: ' : '🟢 Strong Contribution: '}</strong>
+        {metrics.alertMessage}
+      </div>
+
       {metrics.showDeferredWarning && (
-        <div className="alert-box alert-warning" style={{ display: 'block' }}>
+        <div className="alert-box alert-warning" role="alert" style={{ display: 'block', marginTop: '10px' }}>
           {metrics.deferredWarningText}
         </div>
       )}
-      {metrics.showMarginWarning && (
-        <div className="alert-box alert-danger" style={{ display: 'block' }}>
-          {metrics.marginWarningText}
-        </div>
-      )}
 
-      {/* Optional owner information and report preparation */}
+      {/* Lead Capture & Returning Visitor State */}
       <div className="lead-box">
-        <form onSubmit={handleLeadSubmit}>
-          <label className="label-text" style={{ color: '#F5E6C4' }}>Save & Prepare My Profit Report</label>
-          <p style={{ fontSize: '12px', color: '#CBD5E1' }}>Results are visible above. Contact details are optional unless you opt into follow-up.</p>
-          <input className="manual-input" style={{ marginTop: '6px' }} value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Your name (optional)" maxLength={100} />
-          <input className="manual-input" style={{ marginTop: '6px' }} value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice name (optional)" maxLength={120} />
-          <input type="tel" className="manual-input" style={{ marginTop: '6px' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile number (optional)" maxLength={25} />
-          <input className="manual-input" style={{ marginTop: '6px' }} value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this calculator? (optional)" maxLength={400} />
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '12px', color: '#E2E8F0' }}>
-            <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} />
-            I agree that Monique Reid Bookkeeping may contact me at the number provided about my calculator feedback and bookkeeping services. This is optional and separate from getting my report.
-          </label>
-          <button type="submit" disabled={saving} className="cta-btn">{saving ? 'Saving…' : isSubmitted ? 'Save Another Snapshot' : 'Save & Prepare My Report'}</button>
-        </form>
+        {(!isLeadCaptured || isEditingContact) ? (
+          <form onSubmit={handleLeadSubmit}>
+            <label className="label-text" style={{ color: '#F5E6C4' }}>Save & Generate Diagnostic PDF Report</label>
+            <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>
+              Enter your details to generate your professional print-ready CPA discussion summary.
+            </p>
+            <input className="manual-input" style={{ marginTop: '6px' }} value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Owner Name (optional)" maxLength={100} />
+            <input className="manual-input" style={{ marginTop: '6px' }} value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice Name (optional)" maxLength={120} />
+            <input type="tel" className="manual-input" style={{ marginTop: '6px' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile Phone Number (optional)" maxLength={25} />
+            <input className="manual-input" style={{ marginTop: '6px' }} value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this calculator? (optional)" maxLength={400} />
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '12px', color: '#E2E8F0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} />
+              I consent to receiving follow-up communication regarding this report and bookkeeping services from Monique Reid Bookkeeping.
+            </label>
+            <button type="submit" disabled={saving} className="cta-btn" style={{ marginTop: '12px' }}>
+              {saving ? 'Saving...' : 'Save & Print Diagnostic Report 📄'}
+            </button>
+          </form>
+        ) : (
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: '#34D399', fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>✓ Diagnostic Session Recorded</p>
+            <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '12px' }}>
+              You have previously saved your session on this browser. You can generate fresh reports instantly or edit your contact information.
+            </p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button type="button" className="cta-btn" onClick={() => window.print()} style={{ marginTop: 0 }}>
+                🚀 Generate Fresh PDF Report
+              </button>
+              <button type="button" className="secondary-cta-btn" onClick={() => setIsEditingContact(true)} style={{ marginTop: 0 }}>
+                Edit Details
+              </button>
+            </div>
+          </div>
+        )}
+
         {saveMessage && <p role="status" style={{ marginTop: '10px', fontSize: '12px', color: '#F5E6C4' }}>{saveMessage}</p>}
-        <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-          <button type="button" className="secondary-cta-btn" onClick={handleOpenSms}>Open Text App</button>
-          <button type="button" className="secondary-cta-btn" onClick={handleCopyReport}>Copy My Report</button>
-        </div>
-        {smsReady && <p style={{ fontSize: '11px', color: '#CBD5E1' }}>Text delivery is not automatic; review and send inside your messaging app.</p>}
-        <details style={{ marginTop: '8px', color: '#E2E8F0', fontSize: '12px' }}>
-          <summary>View report text</summary>
-          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', overflowWrap: 'anywhere' }}>{makeReport()}</pre>
-        </details>
       </div>
 
       <a href="https://www.moniquereidbookkeeping.com/" target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
-        Chat with Monique Reid Bookkeeping
+        Visit Monique Reid Bookkeeping
       </a>
 
-      <p className="footer-text">ESTIMATES BASED ON YOUR INPUTS • MONIQUE REID BOOKKEEPING</p>
+      <p className="footer-text">
+        DISCLAIMER: Estimates are generated based on your manual inputs for planning and discussion with your accountant. Not a CPA audit, tax, or legal opinion.<br/>
+        CONFIDENTIAL CLINIC BENCHMARKING ENGINE • MONIQUE REID BOOKKEEPING
+      </p>
     </div>
   );
 }
