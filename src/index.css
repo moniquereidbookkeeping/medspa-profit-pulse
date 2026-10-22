@@ -324,21 +324,30 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   font-weight: 500;
 }
 
-/* Print-Only Professional CPA-Ready Diagnostic Report Styles */
+/* Print-Only Professional CPA-Ready Diagnostic Report Styles - HIGH END LUXURY PDF */
 .print-header-brand {
   display: none;
 }
 
 @media print {
+  @page {
+    size: letter;
+    margin: 0.75in;
+  }
+
   body {
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #0f172a !important;
     padding: 0 !important;
+    font-size: 13pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   
   #root {
     min-height: auto !important;
     align-items: stretch !important;
+    display: block !important;
   }
 
   .app-card {
@@ -352,34 +361,36 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   }
 
   .print-header-brand {
-    display: block;
+    display: block !important;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #d4af37;
+    padding-bottom: 16px;
   }
 
   .print-header-brand h1 {
-    font-size: 20px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: 0.05em;
-    margin: 0;
+    font-size: 24pt !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+    letter-spacing: 0.08em !important;
+    margin: 0 0 6px 0 !important;
   }
 
   .print-header-brand p {
-    font-size: 11px;
-    color: #475569;
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    font-size: 11pt !important;
+    color: #475569 !important;
+    margin: 0 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.15em !important;
+    font-weight: 600 !important;
   }
 
   .print-divider {
-    border: none;
-    border-top: 1px solid #cbd5e1;
-    margin: 10px 0;
+    display: none !important;
   }
 
   /* Hide interactive controls, dropdowns, buttons, forms, and tabs during print */
+  .header,
   .header-top-bar,
   .tab-container,
   .toggle-container,
@@ -388,35 +399,74 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   form,
   .secondary-cta-btn,
   .reset-link-btn,
-  select.manual-input {
+  select.manual-input,
+  .lead-box,
+  a {
     display: none !important;
   }
 
+  /* Luxury High-Contrast Print Results Panel */
   .results-panel {
     background: #f8fafc !important;
     border: 1px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    padding: 24px !important;
     color: #0f172a !important;
     box-shadow: none !important;
+    margin-top: 10px !important;
   }
 
   .result-row {
     color: #334155 !important;
+    font-size: 13pt !important;
+    margin-bottom: 14px !important;
+    font-weight: 600 !important;
+  }
+
+  .result-row > span:first-child {
+    color: #1e293b !important;
   }
 
   .result-row > span:last-child {
     color: #0f172a !important;
+    font-size: 14pt !important;
+  }
+
+  .result-row.total-profit {
+    border-top: 2px solid #94a3b8 !important;
+    padding-top: 16px !important;
+    margin-top: 8px !important;
+  }
+
+  .profit-text {
+    color: #0f172a !important;
+    font-size: 26pt !important;
+    font-weight: 900 !important;
+  }
+
+  .margin-text {
+    color: #0f172a !important;
+    font-size: 16pt !important;
+    font-weight: 800 !important;
   }
 
   .alert-box {
     border: 1px solid #cbd5e1 !important;
     background: #f1f5f9 !important;
     color: #0f172a !important;
+    font-size: 11pt !important;
+    padding: 16px !important;
+    margin-top: 20px !important;
+    border-radius: 8px !important;
   }
 
   .footer-text {
     color: #64748b !important;
-    font-size: 10px !important;
-    margin-top: 24px !important;
+    font-size: 9pt !important;
+    margin-top: 40px !important;
+    text-align: center !important;
+    letter-spacing: 0.1em !important;
+    font-weight: 600 !important;
   }
 }
 
