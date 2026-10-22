@@ -303,11 +303,22 @@ export default function App() {
         </div>
       </div>
 
-      {/* Sliders */}
+      {/* Sliders with Manual Number Inputs */}
       <div className="input-group">
         <div className="slider-header">
           <span className="label-text" style={{ margin: 0 }}>Product Waste/Spill Cushion</span>
-          <span style={{ color: '#F5E6C4', fontWeight: 700 }}>{wasteCushionPct}%</span>
+          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#020617', border: '1px solid #1E293B', borderRadius: '6px', padding: '2px 6px', maxWidth: '75px' }}>
+            <input 
+              type="number" 
+              value={wasteCushionPct} 
+              min="0" 
+              max="50" 
+              step="1"
+              onChange={(e) => startTransition(() => setWasteCushionPct(Math.max(0, parseFloat(e.target.value) || 0)))} 
+              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
+            />
+            <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
+          </div>
         </div>
         <input type="range" min="0" max="25" step="5" value={wasteCushionPct} onChange={(e) => startTransition(() => setWasteCushionPct(parseFloat(e.target.value) || 0))} />
       </div>
@@ -315,7 +326,18 @@ export default function App() {
       <div className="input-group">
         <div className="slider-header">
           <span className="label-text" style={{ margin: 0 }}>Provider Commission Cut</span>
-          <span style={{ color: '#F5E6C4', fontWeight: 700 }}>{commissionPct}%</span>
+          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#020617', border: '1px solid #1E293B', borderRadius: '6px', padding: '2px 6px', maxWidth: '75px' }}>
+            <input 
+              type="number" 
+              value={commissionPct} 
+              min="0" 
+              max="100" 
+              step="1"
+              onChange={(e) => startTransition(() => setCommissionPct(Math.max(0, parseFloat(e.target.value) || 0)))} 
+              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
+            />
+            <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
+          </div>
         </div>
         <input type="range" min="0" max="50" step="5" value={commissionPct} onChange={(e) => startTransition(() => setCommissionPct(parseFloat(e.target.value) || 0))} />
       </div>
