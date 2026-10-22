@@ -222,7 +222,6 @@ export default function App() {
           className="manual-input"
           value={paymentPlatform}
           onChange={(e) => handlePlatformChange(e.target.value as PaymentPlatform)}
-          style={{ backgroundColor: '#020617', color: '#F5E6C4', border: '1px solid #1E293B', padding: '10px', borderRadius: '8px', width: '100%' }}
         >
           <option value="Regular Card Processing (Stripe, Vagaro, Square)">Regular Card Processing (Stripe, Vagaro, Square)</option>
           <option value="Cherry Financing (6-Month No-Interest Plan)">⚡ Cherry Financing (6-Month No-Interest Plan)</option>
