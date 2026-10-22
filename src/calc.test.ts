@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateProfitPulseMetrics, PLATFORM_DEFAULT_FEES } from './calc';
+import { calculateProfitPulseMetrics, PLATFORM_DEFAULT_FEES } from './calc.ts';
 
 test('calculates single-visit injectables and current low-contribution warning', () => {
   const result = calculateProfitPulseMetrics({
@@ -28,6 +28,7 @@ test('calculates single-visit injectables and current low-contribution warning',
   assert.equal(result.showDeferredWarning, false);
   assert.equal(result.deferredPct, 0);
   assert.equal(result.alertLevel, 'red');
+  assert.match(result.alertMessage, /Significant profitability concern/);
 });
 
 test('calculates a four-session prepaid package and current package caution', () => {
@@ -80,7 +81,7 @@ test('validates platform default fee mappings and green alert level for high con
     price: 1000,
     wholesaleCost: 50,
     hourlyOverhead: 30,
-    feeRatePct: PLATFORM_DEFAULT_FEES['Cherry Financing (6-No-Interest Plan)' in PLATFORM_DEFAULT_FEES ? 'Cherry Financing (6-Month No-Interest Plan)' : 'Regular Card Processing (Stripe, Vagaro, Square)'],
+    feeRatePct: PLATFORM_DEFAULT_FEES['Regular Card Processing (Stripe, Vagaro, Square)'],
     sessions: 1,
     treatmentType: 'single',
     wasteCushionPct: 0,
