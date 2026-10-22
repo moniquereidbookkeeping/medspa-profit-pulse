@@ -340,7 +340,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
       color: #0f172a;
     }
     @top-right {
-      content: "Generated: " attr(data-print-date);
+      content: attr(data-print-date);
       font-size: 9pt;
       font-weight: 700;
       color: #0f172a;
@@ -413,7 +413,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
     display: none !important;
   }
 
-  /* Hide interactive controls, form inputs, pills background, and buttons */
+  /* Hide interactive controls and buttons */
   .header,
   .header-top-bar,
   .tab-container,
@@ -429,16 +429,19 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
     display: none !important;
   }
 
-  /* Force all labels, text, and inputs to solid high-contrast black on print */
+  /* Force all labels, text, and inputs to solid high-contrast black on print with NO dark backgrounds */
   .label-text,
   .label-sub,
   .manual-input,
   .currency-input-wrap,
   .slider-header,
-  .input-group {
+  .input-group,
+  input.manual-input {
     color: #000000 !important;
     background: transparent !important;
+    background-color: transparent !important;
     border-color: #000000 !important;
+    box-shadow: none !important;
   }
 
   /* Clean High-Contrast Print Results Panel */
