@@ -123,22 +123,6 @@ export default function App() {
     setSaveMessage("");
   };
 
-  const makeReport = () => [
-    'MONIQUE REID BOOKKEEPING — Treatment Profitability Diagnostic',
-    `Practice: ${practiceName || 'Not specified'} (${ownerName || 'Owner'})`,
-    `Category: ${category} | Platform: ${paymentPlatform}`,
-    `Treatment price: $${price.toFixed(2)}`,
-    `Processing fees (${feeRatePct}%): $${metrics.hiddenPlatformFees.toFixed(2)}`,
-    `Materials (incl. waste): $${metrics.totalCostOfMaterials.toFixed(2)}`,
-    `Provider compensation: $${metrics.providerPayrollCut.toFixed(2)}`,
-    `Room overhead: $${metrics.roomOperationalExpense.toFixed(2)}`,
-    `Total estimated outflows: $${metrics.totalOutflows.toFixed(2)}`,
-    `Estimated treatment contribution: $${metrics.yourRealTakeawayCash.toFixed(2)}`,
-    `Estimated keep percentage: ${metrics.yourRealKeepPercentagePct}%`,
-    treatmentType === 'package' ? `Package sessions: ${sessions}; per-visit contribution: $${metrics.takeawayPerVisit.toFixed(2)}` : '',
-    'Disclaimer: Estimates based on manual inputs for planning and discussion with accountant. Not an audit or tax opinion.'
-  ].filter(Boolean).join('\n');
-
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
@@ -406,7 +390,7 @@ export default function App() {
             <input className="manual-input" style={{ marginTop: '6px' }} value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this calculator? (optional)" maxLength={400} />
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '12px', color: '#E2E8F0', cursor: 'pointer' }}>
               <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} />
-              I consent to receiving follow-up communication regarding this report and bookkeeping services from Monique Reid Bookkeeping.
+              I consent to receiving follow-up communication regarding this report and bookkeeping services from [Monique Reid Bookkeeping](https://www.moniquereidbookkeeping.com/).
             </label>
             <button type="submit" disabled={saving} className="cta-btn" style={{ marginTop: '12px' }}>
               {saving ? 'Saving...' : 'Save & Print Diagnostic Report 📄'}
