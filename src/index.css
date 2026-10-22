@@ -324,7 +324,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   font-weight: 500;
 }
 
-/* Print-Only Professional CPA-Ready Diagnostic Report Styles - HIGH END LUXURY PDF */
+/* Print-Only Professional Executive PDF Report Styles */
 .print-header-brand {
   display: none;
 }
@@ -332,14 +332,37 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 @media print {
   @page {
     size: letter;
-    margin: 0.75in;
+    margin: 0.6in;
+    @top-left {
+      content: "Monique Reid Bookkeeping | Profitability Diagnostic";
+      font-size: 9pt;
+      font-weight: 600;
+      color: #64748b;
+    }
+    @top-right {
+      content: attr(data-print-date);
+      font-size: 9pt;
+      font-weight: 600;
+      color: #64748b;
+    }
+    @bottom-left {
+      content: "Confidential - For Client & Accountant Discussion Only";
+      font-size: 8pt;
+      color: #94a3b8;
+    }
+    @bottom-right {
+      content: "Page " counter(page);
+      font-size: 9pt;
+      font-weight: 600;
+      color: #64748b;
+    }
   }
 
   body {
     background: #ffffff !important;
     color: #0f172a !important;
     padding: 0 !important;
-    font-size: 13pt !important;
+    font-size: 11pt !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -363,26 +386,26 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .print-header-brand {
     display: block !important;
     text-align: center;
-    margin-bottom: 24px;
-    border-bottom: 2px solid #d4af37;
-    padding-bottom: 16px;
+    margin-bottom: 20px;
+    border-bottom: 3px solid #d4af37;
+    padding-bottom: 14px;
   }
 
   .print-header-brand h1 {
-    font-size: 24pt !important;
+    font-size: 22pt !important;
     font-weight: 900 !important;
     color: #0f172a !important;
     letter-spacing: 0.08em !important;
-    margin: 0 0 6px 0 !important;
+    margin: 0 0 4px 0 !important;
   }
 
   .print-header-brand p {
-    font-size: 11pt !important;
+    font-size: 10pt !important;
     color: #475569 !important;
     margin: 0 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.15em !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
   }
 
   .print-divider {
@@ -405,21 +428,21 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
     display: none !important;
   }
 
-  /* Luxury High-Contrast Print Results Panel */
+  /* Clean High-Contrast Print Results Panel */
   .results-panel {
     background: #f8fafc !important;
     border: 1px solid #cbd5e1 !important;
-    border-radius: 12px !important;
-    padding: 24px !important;
+    border-radius: 10px !important;
+    padding: 22px !important;
     color: #0f172a !important;
     box-shadow: none !important;
-    margin-top: 10px !important;
+    margin-top: 5px !important;
   }
 
   .result-row {
     color: #334155 !important;
-    font-size: 13pt !important;
-    margin-bottom: 14px !important;
+    font-size: 12pt !important;
+    margin-bottom: 12px !important;
     font-weight: 600 !important;
   }
 
@@ -429,24 +452,24 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 
   .result-row > span:last-child {
     color: #0f172a !important;
-    font-size: 14pt !important;
+    font-size: 13pt !important;
   }
 
   .result-row.total-profit {
-    border-top: 2px solid #94a3b8 !important;
-    padding-top: 16px !important;
-    margin-top: 8px !important;
+    border-top: 2px solid #64748b !important;
+    padding-top: 14px !important;
+    margin-top: 6px !important;
   }
 
   .profit-text {
     color: #0f172a !important;
-    font-size: 26pt !important;
+    font-size: 24pt !important;
     font-weight: 900 !important;
   }
 
   .margin-text {
     color: #0f172a !important;
-    font-size: 16pt !important;
+    font-size: 15pt !important;
     font-weight: 800 !important;
   }
 
@@ -454,16 +477,16 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
     border: 1px solid #cbd5e1 !important;
     background: #f1f5f9 !important;
     color: #0f172a !important;
-    font-size: 11pt !important;
-    padding: 16px !important;
-    margin-top: 20px !important;
+    font-size: 10.5pt !important;
+    padding: 14px !important;
+    margin-top: 16px !important;
     border-radius: 8px !important;
   }
 
   .footer-text {
     color: #64748b !important;
-    font-size: 9pt !important;
-    margin-top: 40px !important;
+    font-size: 8.5pt !important;
+    margin-top: 30px !important;
     text-align: center !important;
     letter-spacing: 0.1em !important;
     font-weight: 600 !important;
