@@ -340,16 +340,14 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
       color: #0f172a;
     }
     @top-right {
-      content: attr(data-print-date);
+      content: "Date: " current(date) " Time: " current(time);
       font-size: 9pt;
       font-weight: 700;
       color: #0f172a;
     }
     @bottom-left {
-      content: "Confidential - For Owners Only";
+      content: "";
       font-size: 9pt;
-      font-weight: 700;
-      color: #b91c1c;
     }
     @bottom-right {
       content: "Page " counter(page);
