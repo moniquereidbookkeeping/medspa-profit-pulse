@@ -1,471 +1,521 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+@import "tailwindcss";
 
-import React, { useState, useEffect, useTransition } from 'react';
-import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS, PLATFORM_DEFAULT_FEES, PaymentPlatform } from './calc';
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #F1F5F9;
+  background: radial-gradient(circle at 50% 0%, #111827 0%, #060913 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+}
 
-const STORAGE_KEY = "medspa_profit_pulse_state";
-const LEAD_CAPTURED_KEY = "medspa_profit_pulse_lead_captured";
+* { box-sizing: border-box; }
 
-export default function App() {
-  const [category, setCategory] = useState<'injectables' | 'lasers' | 'facials'>('injectables');
-  const [paymentPlatform, setPaymentPlatform] = useState<PaymentPlatform>('Regular Card Processing (Stripe, Vagaro, Square)');
-  const [feeRatePct, setFeeRatePct] = useState<number>(3.0);
-  const [treatmentType, setTreatmentType] = useState<'single' | 'package'>('single');
-  const [sessions, setSessions] = useState<number>(1);
+html { min-width: 320px; min-height: 100%; background: #060913; }
+
+body {
+  background: radial-gradient(circle at 50% 0%, #0F172A 0%, #020617 100%);
+  color: #F1F5F9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 24px 16px;
+}
+
+#root {
+  width: 100%;
+  min-height: calc(100vh - 48px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+button, input, textarea, select { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+
+/* Premium Luxury Card Styling */
+.app-card {
+  background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
+  width: 100%;
+  max-width: 480px;
+  border-radius: 20px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(212, 175, 55, 0.08);
+  padding: 28px 24px;
+}
+
+.header { position: relative; }
+.header h1 {
+  color: #F5E6C4;
+  font-size: 23px;
+  line-height: 1.25;
+  text-align: center;
+  margin: 0;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.header > p {
+  color: #E2E8F0;
+  font-size: 12px;
+  text-align: center;
+  margin: 6px 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+}
+.header-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: rgba(212, 175, 55, 0.15);
+  color: #E5C158;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+.reset-link-btn {
+  background: none;
+  border: none;
+  color: #CBD5E1;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.reset-link-btn:hover, .reset-link-btn:focus-visible { color: #F5E6C4; background: rgba(255,255,255,0.05); }
+
+.tab-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background-color: #060913;
+  padding: 5px;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  margin-top: 18px;
+  gap: 4px;
+}
+.tab-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: #94A3B8;
+  padding: 10px 4px;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  white-space: normal;
+  letter-spacing: 0.04em;
+}
+.tab-btn.active {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  color: #F5E6C4;
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+}
+
+.input-group { margin-top: 18px; min-width: 0; }
+.label-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #E2E8F0;
+  margin-bottom: 6px;
+}
+.label-sub { font-size: 10px; color: #CBD5E1; text-transform: none; letter-spacing: normal; text-align: right; font-weight: 500; }
+.input-row-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(68px, 1fr); gap: 8px; align-items: center; }
+
+.toggle-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 0;
+  background-color: #060913;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  gap: 4px;
+}
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #CBD5E1;
+  padding: 9px 6px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.toggle-btn.active { background: #F5E6C4; color: #020617; font-weight: 800; box-shadow: 0 0 10px rgba(245,230,196,0.3); }
+
+.manual-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  background-color: #060913;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: #F5E6C4;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.manual-input:focus { border-color: #D4AF37; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2); background-color: #090E1A; }
+.manual-input:disabled { color: #64748B; cursor: not-allowed; }
+
+select.manual-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F5E6C4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.rate-suffix-input { text-align: center; padding: 10px 6px !important; font-size: 14px !important; }
+.currency-input-wrap { position: relative; display: flex; align-items: center; }
+.currency-input-wrap > span { position: absolute; left: 14px; color: #D4AF37; font-weight: 800; font-size: 15px; pointer-events: none; }
+.currency-input-wrap input { padding-left: 30px; }
+
+.slider-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #E2E8F0; margin-bottom: 6px; }
+.slider-header > .label-text { flex: 1; }
+
+input[type="range"] {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin: 12px 0 4px;
+  background: #1E293B;
+  border-radius: 4px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  accent-color: #D4AF37;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #D4AF37;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(212,175,55,0.6);
+  border: 2px solid #060913;
+  transition: transform 0.1s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.divider { margin: 22px 0; border: none; border-top: 1px solid rgba(212, 175, 55, 0.2); }
+
+.results-panel {
+  background: rgba(6, 9, 19, 0.75);
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+}
+.result-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; font-size: 13px; line-height: 1.5; color: #CBD5E1; margin-bottom: 10px; font-weight: 500; }
+.result-row > span:first-child { flex: 1; }
+.result-row > span:last-child { flex-shrink: 0; text-align: right; font-weight: 700; color: #F1F5F9; }
+.result-row.total-profit { border-top: 1px solid rgba(212, 175, 55, 0.25); padding-top: 12px; margin-bottom: 6px; align-items: baseline; color: #F8FAFC; }
+.profit-text { color: #E5C158; font-size: 25px; line-height: 1.2; font-weight: 800; letter-spacing: -0.02em; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.margin-text { color: #E5C158; font-weight: 800; font-size: 15px; }
+
+.alert-box { margin-top: 14px; padding: 14px 16px; border-radius: 12px; font-size: 12px; line-height: 1.6; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.alert-green { background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.4); color: #6EE7B7; }
+.alert-amber { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); color: #FDE047; }
+.alert-red { background: rgba(248, 113, 113, 0.12); border: 1px solid rgba(248, 113, 113, 0.4); color: #FCA5A5; }
+.alert-warning { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); color: #FDE047; }
+
+.lead-box {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(6, 9, 19, 0.65);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+}
+.lead-box form { display: flex; flex-direction: column; gap: 10px; }
+.lead-box form .label-text { margin-bottom: 0; }
+.lead-box form p { margin: 0 0 4px; line-height: 1.5; color: #CBD5E1; }
+.lead-box input[type="checkbox"] { flex: 0 0 auto; margin-top: 3px; accent-color: #D4AF37; width: 16px; height: 16px; cursor: pointer; }
+
+.cta-btn, .secondary-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.04em;
+}
+.cta-btn {
+  width: 100%;
+  margin-top: 6px;
+  color: #060913;
+  background: linear-gradient(135deg, #F5E6C4 0%, #D4AF37 100%);
+  border: 1px solid #F5E6C4;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+.cta-btn:hover:not(:disabled) { background: linear-gradient(135deg, #FBECCB 0%, #E5C158 100%); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4); }
+.cta-btn:disabled { opacity: 0.6; cursor: wait; }
+
+.secondary-cta-btn {
+  color: #F5E6C4;
+  background: rgba(245, 230, 196, 0.06);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  margin-top: 12px;
+  width: 100%;
+}
+.secondary-cta-btn:hover { background: rgba(245, 230, 196, 0.12); border-color: #D4AF37; transform: translateY(-1px); }
+
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #D4AF37; outline-offset: 3px; }
+
+.footer-text { 
+  color: #94A3B8; 
+  font-size: 10px; 
+  line-height: 1.6; 
+  text-align: center; 
+  letter-spacing: 0.1em; 
+  margin: 20px 0 0; 
+  font-weight: 500;
+}
+
+/* Print-Only DOM Header & Footer for Date/Time & Page Numbers */
+.print-top-meta, .print-bottom-meta, .print-header-brand {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    font-size: 11pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   
-  const [price, setPrice] = useState<number>(CATEGORY_DEFAULTS.injectables.price);
-  const [wholesaleCost, setWholesaleCost] = useState<number>(CATEGORY_DEFAULTS.injectables.wholesaleCost);
-  const [hourlyOverhead, setHourlyOverhead] = useState<number>(CATEGORY_DEFAULTS.injectables.hourlyOverhead);
-  const [wasteCushionPct, setWasteCushionPct] = useState<number>(10);
-  const [commissionPct, setCommissionPct] = useState<number>(30);
+  #root {
+    min-height: auto !important;
+    align-items: stretch !important;
+    display: block !important;
+  }
 
-  const [phone, setPhone] = useState<string>("");
-  const [ownerName, setOwnerName] = useState("");
-  const [practiceName, setPracticeName] = useState("");
-  const [contactConsent, setContactConsent] = useState(false);
-  const [feedback, setFeedback] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState("");
-  const [printTimestamp, setPrintTimestamp] = useState("");
-  
-  const [isLeadCaptured, setIsLeadCaptured] = useState(false);
-  const [isEditingContact, setIsEditingContact] = useState(false);
-  const [, startTransition] = useTransition();
+  .app-card {
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
 
-  // Load from LocalStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.category) setCategory(parsed.category);
-        if (parsed.paymentPlatform) setPaymentPlatform(parsed.paymentPlatform);
-        if (parsed.feeRatePct !== undefined) setFeeRatePct(parsed.feeRatePct);
-        if (parsed.treatmentType) setTreatmentType(parsed.treatmentType);
-        if (parsed.sessions !== undefined) setSessions(parsed.sessions);
-        if (parsed.price !== undefined) setPrice(parsed.price);
-        if (parsed.wholesaleCost !== undefined) setWholesaleCost(parsed.wholesaleCost);
-        if (parsed.hourlyOverhead !== undefined) setHourlyOverhead(parsed.hourlyOverhead);
-        if (parsed.wasteCushionPct !== undefined) setWasteCushionPct(parsed.wasteCushionPct);
-        if (parsed.commissionPct !== undefined) setCommissionPct(parsed.commissionPct);
-      }
-      const captured = localStorage.getItem(LEAD_CAPTURED_KEY);
-      if (captured === 'true') {
-        setIsLeadCaptured(true);
-      }
-    } catch (e) {
-      console.warn("Could not load saved state", e);
-    }
-  }, []);
+  .print-top-meta {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
 
-  // Save state to LocalStorage
-  useEffect(() => {
-    try {
-      const stateToSave = {
-        category, paymentPlatform, feeRatePct, treatmentType, sessions,
-        price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-    } catch (e) {
-      console.warn("Could not save state", e);
-    }
-  }, [category, paymentPlatform, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct]);
+  .print-bottom-meta {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 8px;
+    margin-top: 24px;
+  }
 
-  const metrics = calculateProfitPulseMetrics({
-    price,
-    wholesaleCost,
-    hourlyOverhead,
-    feeRatePct,
-    sessions,
-    treatmentType,
-    wasteCushionPct,
-    commissionPct
-  });
+  .print-header-brand {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 3px solid #0f172a;
+    padding-bottom: 12px;
+  }
 
-  const handleCategoryChange = (cat: 'injectables' | 'lasers' | 'facials') => {
-    setCategory(cat);
-    const defaults = CATEGORY_DEFAULTS[cat];
-    setPrice(defaults.price);
-    setWholesaleCost(defaults.wholesaleCost);
-    setHourlyOverhead(defaults.hourlyOverhead);
-  };
+  .print-header-brand h1 {
+    font-size: 22pt !important;
+    font-weight: 900 !important;
+    color: #000000 !important;
+    letter-spacing: 0.08em !important;
+    margin: 0 0 4px 0 !important;
+  }
 
-  const handlePlatformChange = (platform: PaymentPlatform) => {
-    setPaymentPlatform(platform);
-    if (platform !== 'Custom Platform Fee Override') {
-      setFeeRatePct(PLATFORM_DEFAULT_FEES[platform]);
-    }
-  };
+  .print-header-brand p {
+    font-size: 10pt !important;
+    color: #1e293b !important;
+    margin: 0 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.15em !important;
+    font-weight: 800 !important;
+  }
 
-  const handleTreatmentTypeChange = (type: 'single' | 'package') => {
-    setTreatmentType(type);
-    if (type === 'package' && sessions === 1) {
-      setSessions(4);
-    } else if (type === 'single') {
-      setSessions(1);
-    }
-  };
+  .print-divider {
+    display: none !important;
+  }
 
-  const handleReset = () => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
-    handleCategoryChange('injectables');
-    handlePlatformChange('Regular Card Processing (Stripe, Vagaro, Square)');
-    handleTreatmentTypeChange('single');
-    setWasteCushionPct(10);
-    setCommissionPct(30);
-    setPhone("");
-    setOwnerName("");
-    setPracticeName("");
-    setFeedback("");
-    setContactConsent(false);
-    setSaveMessage("");
-  };
+  /* Hide interactive controls, buttons, forms, and tabs */
+  .header,
+  .header-top-bar,
+  .tab-container,
+  .toggle-container,
+  button,
+  input[type="range"],
+  form,
+  .secondary-cta-btn,
+  .reset-link-btn,
+  select.manual-input,
+  .lead-box,
+  a,
+  .footer-text {
+    display: none !important;
+  }
 
-  const triggerPrintReport = () => {
-    const now = new Date();
-    const formattedDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const formattedTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    setPrintTimestamp(`${formattedDate} at ${formattedTime}`);
-    setTimeout(() => {
-      window.print();
-    }, 100);
-  };
+  /* Force all labels, text, and inputs to solid high-contrast black on print with NO dark backgrounds */
+  .label-text,
+  .label-sub,
+  .manual-input,
+  .currency-input-wrap,
+  .slider-header,
+  .input-group,
+  input.manual-input {
+    color: #000000 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: #000000 !important;
+    box-shadow: none !important;
+  }
 
-  const handleLeadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (saving) return;
+  /* Clean High-Contrast Print Results Panel */
+  .results-panel {
+    background: #ffffff !important;
+    border: 2px solid #000000 !important;
+    border-radius: 8px !important;
+    padding: 20px !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    margin-top: 10px !important;
+  }
 
-    if (phone.trim()) {
-      const digits = phone.replace(/\D/g, '');
-      if (digits.length < 10 || digits.length > 15) {
-        setSaveMessage('Please enter a valid mobile number (10-15 digits), or leave blank.');
-        return;
-      }
-    }
+  .result-row {
+    color: #000000 !important;
+    font-size: 12pt !important;
+    margin-bottom: 12px !important;
+    font-weight: 700 !important;
+  }
 
-    setSaving(true);
-    setSaveMessage('Saving your diagnostic snapshot...');
+  .result-row > span:first-child {
+    color: #000000 !important;
+  }
 
-    try {
-      const reportId = crypto.randomUUID();
-      const response = await fetch('/api/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reportId, ownerName, practiceName, phone: phone.trim(),
-          contactConsent, feedback, category, paymentPlatform,
-          treatmentType, sessions, price, wholesaleCost,
-          wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct,
-          totalCostOfMaterials: metrics.totalCostOfMaterials,
-          hiddenPlatformFees: metrics.hiddenPlatformFees,
-          providerPayrollCut: metrics.providerPayrollCut,
-          roomOperationalExpense: metrics.roomOperationalExpense,
-          totalOutflows: metrics.totalOutflows,
-          contribution: metrics.yourRealTakeawayCash,
-          margin: metrics.yourRealKeepPercentagePct,
-          source: 'MedSpa Profit Pulse'
-        })
-      });
+  .result-row > span:last-child {
+    color: #000000 !important;
+    font-size: 13pt !important;
+    font-weight: 800 !important;
+  }
 
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.saved !== true) {
-        throw new Error('Server did not confirm save.');
-      }
+  .result-row.total-profit {
+    border-top: 2px solid #000000 !important;
+    padding-top: 14px !important;
+    margin-top: 6px !important;
+  }
 
-      localStorage.setItem(LEAD_CAPTURED_KEY, 'true');
-      setIsLeadCaptured(true);
-      setIsEditingContact(false);
-      setSaveMessage('Report successfully saved to your practice tracker.');
-    } catch (error) {
-      console.error('Remote save failed', error);
-      localStorage.setItem(LEAD_CAPTURED_KEY, 'true');
-      setIsLeadCaptured(true);
-      setSaveMessage('Cloud save unavailable. Your report is generated and ready to print/export.');
-    } finally {
-      setSaving(false);
-      triggerPrintReport();
-    }
-  };
+  .profit-text {
+    color: #000000 !important;
+    font-size: 24pt !important;
+    font-weight: 900 !important;
+  }
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
-  };
+  .margin-text {
+    color: #000000 !important;
+    font-size: 15pt !important;
+    font-weight: 900 !important;
+  }
 
-  return (
-    <div className="app-card">
-      {/* Print-Only Explicit Top Header with Date & Time */}
-      <div className="print-top-meta">
-        <span>Monique Reid Bookkeeping | Profitability Diagnostic</span>
-        <span>{printTimestamp || new Date().toLocaleString()}</span>
-      </div>
+  .alert-box {
+    border: 1px solid #000000 !important;
+    background: #f8fafc !important;
+    color: #000000 !important;
+    font-size: 10.5pt !important;
+    padding: 14px !important;
+    margin-top: 16px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+  }
+}
 
-      {/* Print-Only Professional CPA-Ready Diagnostic Header */}
-      <div className="print-header-brand">
-        <h1>MONIQUE REID BOOKKEEPING</h1>
-        <p>Secure Virtual Solutions • MedSpa Treatment Profitability Diagnostic</p>
-      </div>
+@media (max-width: 390px) {
+  body { padding: 10px; }
+  #root { min-height: calc(100vh - 20px); }
+  .app-card { padding: 17px; border-radius: 16px; }
+  .header h1 { font-size: 20px; }
+  .tab-btn { font-size: 9px; padding-left: 2px; padding-right: 2px; }
+  .input-row-split { grid-template-columns: minmax(0, 1.8fr) minmax(60px, 0.8fr); }
+  .toggle-btn { font-size: 10px; }
+  .results-panel { padding: 14px; }
+  .result-row { font-size: 12px; gap: 8px; }
+  .profit-text { font-size: 22px; }
+}
 
-      <div className="header">
-        <div className="header-top-bar">
-          <span className="badge-pill">Clinic Unit Economics</span>
-          <button type="button" className="reset-link-btn" onClick={handleReset} title="Reset to standard defaults">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
-            </svg>
-            Reset Defaults
-          </button>
-        </div>
-        <h1>THE MEDSPA PROFIT PULSE</h1>
-        <p>Find Missing Cash In Your Menu</p>
-      </div>
-
-      {/* Category Tabs */}
-      <div className="tab-container" role="tablist">
-        <button onClick={() => handleCategoryChange('injectables')} className={`tab-btn ${category === 'injectables' ? 'active' : ''}`} role="tab">Injectables</button>
-        <button onClick={() => handleCategoryChange('lasers')} className={`tab-btn ${category === 'lasers' ? 'active' : ''}`} role="tab">Lasers & Devices</button>
-        <button onClick={() => handleCategoryChange('facials')} className={`tab-btn ${category === 'facials' ? 'active' : ''}`} role="tab">Facials & Skin</button>
-      </div>
-
-      {/* Payment Platform Dropdown */}
-      <div className="input-group">
-        <label className="label-text" htmlFor="platform-select">Choose Payment/Financing Platform</label>
-        <select 
-          id="platform-select"
-          className="manual-input"
-          value={paymentPlatform}
-          onChange={(e) => handlePlatformChange(e.target.value as PaymentPlatform)}
-        >
-          <option value="Regular Card Processing (Stripe, Vagaro, Square)">Regular Card Processing (Stripe, Vagaro, Square)</option>
-          <option value="Cherry Financing (6-Month No-Interest Plan)">⚡ Cherry Financing (6-Month No-Interest Plan)</option>
-          <option value="Cherry Financing (12-Month Zero-Interest Split)">⚡ Cherry Financing (12-Month Zero-Interest Split)</option>
-          <option value="CareCredit Standard Doctor Fee Program">💳 CareCredit Standard Doctor Fee Program</option>
-          <option value="PatientFi Base Promotion Rate Setup">🌸 PatientFi Base Promotion Rate Setup</option>
-          <option value="Custom Platform Fee Override">🛠️ Custom Platform Fee Override</option>
-        </select>
-        <span className="label-sub" style={{ marginTop: '4px', display: 'block', color: '#94A3B8' }}>
-          Illustrative default rate: {feeRatePct}% (Editable below)
-        </span>
-      </div>
-
-      {/* Fee Rate Input */}
-      <div className="input-group">
-        <label className="label-text">Effective Platform Fee Rate (%)</label>
-        <div className="currency-input-wrap">
-          <input 
-            type="number" 
-            className="manual-input" 
-            value={feeRatePct} 
-            step="0.1" 
-            min="0" 
-            max="30" 
-            onChange={(e) => startTransition(() => setFeeRatePct(Math.max(0, parseFloat(e.target.value) || 0)))} 
-          />
-        </div>
-      </div>
-
-      {/* Treatment Type Setup */}
-      <div className="input-group">
-        <span className="label-text">
-          Treatment Structure
-          <span className="label-sub">{treatmentType === 'single' ? '1 visit' : `${sessions} visits`}</span>
-        </span>
-        <div className="input-row-split">
-          <div className="toggle-container" role="radiogroup">
-            <button onClick={() => handleTreatmentTypeChange('single')} className={`toggle-btn ${treatmentType === 'single' ? 'active' : ''}`} role="radio">Single Visit</button>
-            <button onClick={() => handleTreatmentTypeChange('package')} className={`toggle-btn ${treatmentType === 'package' ? 'active' : ''}`} role="radio">📦 Multi-Session</button>
-          </div>
-          <div>
-            <input 
-              type="number" 
-              className="manual-input rate-suffix-input" 
-              value={sessions} 
-              min="1" 
-              max="24" 
-              step="1" 
-              disabled={treatmentType === 'single'} 
-              onChange={(e) => startTransition(() => setSessions(parseInt(e.target.value, 10) || 1))} 
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Financial Inputs */}
-      <div className="input-group">
-        <label className="label-text">What Does the Client Pay You? ($)</label>
-        <div className="currency-input-wrap">
-          <span>$</span>
-          <input type="number" className="manual-input" value={price} min="0" step="10" onChange={(e) => startTransition(() => setPrice(Math.max(0, parseFloat(e.target.value) || 0)))} />
-        </div>
-      </div>
-
-      <div className="input-group">
-        <label className="label-text">Wholesale Cost of Products/Boxes Used ($)</label>
-        <div className="currency-input-wrap">
-          <span>$</span>
-          <input type="number" className="manual-input" value={wholesaleCost} min="0" step="5" onChange={(e) => startTransition(() => setWholesaleCost(Math.max(0, parseFloat(e.target.value) || 0)))} />
-        </div>
-      </div>
-
-      <div className="input-group">
-        <label className="label-text">Estimated Room Overhead per Hour ($)</label>
-        <div className="currency-input-wrap">
-          <span>$</span>
-          <input type="number" className="manual-input" value={hourlyOverhead} min="0" step="5" onChange={(e) => startTransition(() => setHourlyOverhead(Math.max(0, parseFloat(e.target.value) || 0)))} />
-        </div>
-      </div>
-
-      {/* Sliders with Manual Number Inputs */}
-      <div className="input-group">
-        <div className="slider-header">
-          <span className="label-text" style={{ margin: 0 }}>Product Waste/Spill Cushion</span>
-          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#020617', border: '1px solid #1E293B', borderRadius: '6px', padding: '2px 6px', maxWidth: '75px' }}>
-            <input 
-              type="number" 
-              value={wasteCushionPct} 
-              min="0" 
-              max="50" 
-              step="1"
-              onChange={(e) => startTransition(() => setWasteCushionPct(Math.max(0, parseFloat(e.target.value) || 0)))} 
-              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
-            />
-            <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
-          </div>
-        </div>
-        <input type="range" min="0" max="25" step="5" value={wasteCushionPct} onChange={(e) => startTransition(() => setWasteCushionPct(parseFloat(e.target.value) || 0))} />
-      </div>
-
-      <div className="input-group">
-        <div className="slider-header">
-          <span className="label-text" style={{ margin: 0 }}>Provider Commission Cut</span>
-          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#020617', border: '1px solid #1E293B', borderRadius: '6px', padding: '2px 6px', maxWidth: '75px' }}>
-            <input 
-              type="number" 
-              value={commissionPct} 
-              min="0" 
-              max="100" 
-              step="1"
-              onChange={(e) => startTransition(() => setCommissionPct(Math.max(0, parseFloat(e.target.value) || 0)))} 
-              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
-            />
-            <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
-          </div>
-        </div>
-        <input type="range" min="0" max="50" step="5" value={commissionPct} onChange={(e) => startTransition(() => setCommissionPct(parseFloat(e.target.value) || 0))} />
-      </div>
-
-      <hr className="divider" />
-
-      {/* Results Panel */}
-      <div className="results-panel">
-        <div className="result-row total-profit">
-          <span>Estimated Treatment Contribution</span>
-          <span className="profit-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 35 ? '#FBBF24' : '#34D399' }}>
-            {formatCurrency(metrics.yourRealTakeawayCash)}
-          </span>
-        </div>
-        <div className="result-row" style={{ marginBottom: '12px' }}>
-          <span>Estimated Keep Percentage</span>
-          <span className="margin-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 35 ? '#FBBF24' : '#34D399' }}>
-            {metrics.yourRealKeepPercentagePct}%
-          </span>
-        </div>
-        <div className="result-row">
-          <span>Platform Fees ({feeRatePct}%)</span>
-          <span>{formatCurrency(metrics.hiddenPlatformFees)}</span>
-        </div>
-        <div className="result-row">
-          <span>Total Cost of Materials (+{wasteCushionPct}% cushion)</span>
-          <span>{formatCurrency(metrics.totalCostOfMaterials)}</span>
-        </div>
-        <div className="result-row">
-          <span>Provider Payroll Cut ({commissionPct}%)</span>
-          <span>{formatCurrency(metrics.providerPayrollCut)}</span>
-        </div>
-        <div className="result-row">
-          <span>Room Operational Expense</span>
-          <span>{formatCurrency(metrics.roomOperationalExpense)}</span>
-        </div>
-        <div className="result-row" style={{ borderTop: '1px solid rgba(30, 41, 59, 0.6)', paddingTop: '6px', color: '#E2E8F0' }}>
-          <span>Total Estimated Outflows</span>
-          <span style={{ color: '#F5E6C4' }}>{formatCurrency(metrics.totalOutflows)}</span>
-        </div>
-        {treatmentType === 'package' && sessions > 1 && (
-          <div className="result-row" style={{ display: 'flex', borderTop: '1px dashed rgba(212, 175, 55, 0.3)', paddingTop: '6px', color: '#D4AF37' }}>
-            <span>Contribution Per Visit ({sessions} visits)</span>
-            <span>{formatCurrency(metrics.takeawayPerVisit)}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Dynamic Accessible Contribution Alert Banner */}
-      <div className={`alert-box alert-${metrics.alertLevel}`} role="alert" style={{ display: 'block', marginTop: '16px' }}>
-        <strong>{metrics.alertLevel === 'red' ? '🚨 Profitability Concern: ' : metrics.alertLevel === 'amber' ? '🟡 Margin Squeeze: ' : '🟢 Strong Contribution: '}</strong>
-        {metrics.alertMessage}
-      </div>
-
-      {metrics.showDeferredWarning && (
-        <div className="alert-box alert-warning" role="alert" style={{ display: 'block', marginTop: '10px' }}>
-          {metrics.deferredWarningText}
-        </div>
-      )}
-
-      {/* Lead Capture & Returning Visitor State */}
-      <div className="lead-box">
-        {(!isLeadCaptured || isEditingContact) ? (
-          <form onSubmit={handleLeadSubmit}>
-            <label className="label-text" style={{ color: '#F5E6C4' }}>Save & Generate Diagnostic PDF Report</label>
-            <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>
-              Enter your details to generate your professional print-ready CPA discussion summary.
-            </p>
-            <input className="manual-input" style={{ marginTop: '6px' }} value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Owner Name (optional)" maxLength={100} />
-            <input className="manual-input" style={{ marginTop: '6px' }} value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice Name (optional)" maxLength={120} />
-            <input type="tel" className="manual-input" style={{ marginTop: '6px' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile Phone Number (optional)" maxLength={25} />
-            <input className="manual-input" style={{ marginTop: '6px' }} value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this calculator? (optional)" maxLength={400} />
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '12px', color: '#E2E8F0', cursor: 'pointer' }}>
-              <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} />
-              I consent to receiving follow-up communication regarding this report and bookkeeping services from Monique Reid Bookkeeping.
-            </label>
-            <button type="submit" disabled={saving} className="cta-btn" style={{ marginTop: '12px' }}>
-              {saving ? 'Saving...' : 'Save & Print Diagnostic Report 📄'}
-            </button>
-          </form>
-        ) : (
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ color: '#34D399', fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>✓ Diagnostic Session Recorded</p>
-            <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '12px' }}>
-              You have previously saved your session on this browser. You can generate fresh reports instantly or edit your contact information.
-            </p>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button type="button" className="cta-btn" onClick={triggerPrintReport} style={{ marginTop: 0 }}>
-                🚀 Generate Fresh PDF Report
-              </button>
-              <button type="button" className="secondary-cta-btn" onClick={() => setIsEditingContact(true)} style={{ marginTop: 0 }}>
-                Edit Details
-              </button>
-            </div>
-          </div>
-        )}
-
-        {saveMessage && <p role="status" style={{ marginTop: '10px', fontSize: '12px', color: '#F5E6C4' }}>{saveMessage}</p>}
-      </div>
-
-      <a href="https://www.moniquereidbookkeeping.com/" target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
-        Visit Monique Reid Bookkeeping
-      </a>
-
-      <p className="footer-text">
-        DISCLAIMER: Estimates are generated based on your manual inputs for planning and discussion with your accountant. Not a CPA audit, tax, or legal opinion.<br/>
-        CONFIDENTIAL CLINIC BENCHMARKING ENGINE • MONIQUE REID BOOKKEEPING
-      </p>
-
-      {/* Print-Only Explicit Bottom Footer */}
-      <div className="print-bottom-meta">
-        <span>Monique Reid Bookkeeping • Confidential Clinic Benchmarking</span>
-      </div>
-    </div>
-  );
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
