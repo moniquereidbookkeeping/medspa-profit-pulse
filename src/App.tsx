@@ -428,8 +428,8 @@ export default function App() {
               You have previously saved your session on this browser. You can generate fresh reports instantly or edit your contact information.
             </p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button type="button" className="cta-btn" onClick={() => window.print()} style={{ marginTop: 0 }}>
-                🚀 Generate Fresh PDF Report
+              <button type="button" className="cta-btn" onClick={() => setIsEditingContact(true)} style={{ marginTop: 0 }}>
+                Create a New Diagnostic Report
               </button>
               <button type="button" className="secondary-cta-btn" onClick={() => setIsEditingContact(true)} style={{ marginTop: 0 }}>
                 Edit Details
