@@ -91,3 +91,40 @@ test('validates platform default fee mappings and green alert level for high con
   assert.ok(result.yourRealKeepPercentagePct >= 40);
   assert.equal(result.alertLevel, 'green');
 });
+
+
+test('zero-price input does not display a misleading green assessment', () => {
+  const result = calculateProfitPulseMetrics({
+    price: 0, wholesaleCost: 0, hourlyOverhead: 0, feeRatePct: 3, sessions: 1,
+    treatmentType: 'single', wasteCushionPct: 0, commissionPct: 0,
+  });
+  assert.equal(result.yourRealKeepPercentagePct, 0);
+  assert.equal(result.alertLevel, 'amber');
+  assert.match(result.alertMessage, /Enter a treatment price greater than \$0/);
+  assert.equal(result.showMarginWarning, false);
+});
+
+
+test('uses amber alert at exactly 30 percent and green at exactly 40 percent', () => {
+  const make = (price: number, wholesaleCost: number, hourlyOverhead: number, commissionPct: number) =>
+    calculateProfitPulseMetrics({
+      price, wholesaleCost, hourlyOverhead, feeRatePct: 0, sessions: 1,
+      treatmentType: 'single', wasteCushionPct: 0, commissionPct,
+    });
+  const at30 = make(100, 70, 0, 0);
+  assert.equal(at30.yourRealKeepPercentagePct, 30);
+  assert.equal(at30.alertLevel, 'amber');
+  const at40 = make(100, 60, 0, 0);
+  assert.equal(at40.yourRealKeepPercentagePct, 40);
+  assert.equal(at40.alertLevel, 'green');
+});
+
+test('applies custom-entered fee rates through the calculation engine', () => {
+  const result = calculateProfitPulseMetrics({
+    price: 1000, wholesaleCost: 100, hourlyOverhead: 25, feeRatePct: 11.25,
+    sessions: 1, treatmentType: 'single', wasteCushionPct: 0, commissionPct: 0,
+  });
+  assert.equal(result.hiddenPlatformFees, 112.5);
+  assert.equal(result.totalOutflows, 237.5);
+  assert.equal(result.yourRealTakeawayCash, 762.5);
+});
