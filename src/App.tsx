@@ -276,7 +276,7 @@ export default function App() {
               max="24" 
               step="1" 
               disabled={treatmentType === 'single'} 
-              onChange={(e) => startTransition(() => setSessions(parseInt(e.target.value, 10) || 1))} 
+              onChange={(e) => startTransition(() => setSessions(Math.min(24, Math.max(1, parseInt(e.target.value, 10) || 1)))} 
             />
           </div>
         </div>
@@ -295,7 +295,7 @@ export default function App() {
         <label className="label-text">Wholesale Cost of Products/Boxes Used ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <input type="number" className="manual-input" value={wholesaleCost} min="0" step="5" onChange={(e) => startTransition(() => setWholesaleCost(Math.max(0, parseFloat(e.target.value) || 0)))} />
+          <input type="number" className="manual-input" value={wholesaleCost} min="0" step="5" onChange={(e) => startTransition(() => setWholesaleCost(Math.min(100000000, Math.max(0, parseFloat(e.target.value) || 0))))} />
         </div>
       </div>
 
@@ -303,7 +303,7 @@ export default function App() {
         <label className="label-text">Estimated Room Overhead per Visit ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <input type="number" className="manual-input" value={hourlyOverhead} min="0" step="5" onChange={(e) => startTransition(() => setHourlyOverhead(Math.max(0, parseFloat(e.target.value) || 0)))} />
+          <input type="number" className="manual-input" value={hourlyOverhead} min="0" step="5" onChange={(e) => startTransition(() => setHourlyOverhead(Math.min(100000000, Math.max(0, parseFloat(e.target.value) || 0))))} />
         </div>
       </div>
 
@@ -318,7 +318,7 @@ export default function App() {
               min="0" 
               max="50" 
               step="1"
-              onChange={(e) => startTransition(() => setWasteCushionPct(Math.max(0, parseFloat(e.target.value) || 0)))} 
+              onChange={(e) => startTransition(() => setWasteCushionPct(Math.min(50, Math.max(0, parseFloat(e.target.value) || 0))))} 
               style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
             />
             <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
@@ -337,7 +337,7 @@ export default function App() {
               min="0" 
               max="100" 
               step="1"
-              onChange={(e) => startTransition(() => setCommissionPct(Math.max(0, parseFloat(e.target.value) || 0)))} 
+              onChange={(e) => startTransition(() => setCommissionPct(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0))))} 
               style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
             />
             <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
@@ -352,7 +352,7 @@ export default function App() {
       <div className="results-panel">
         <div className="result-row total-profit">
           <span>Estimated Treatment Contribution</span>
-          <span className="profit-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 35 ? '#FBBF24' : '#34D399' }}>
+          <span className="profit-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 40 ? '#FBBF24' : '#34D399' }}>
             {formatCurrency(metrics.yourRealTakeawayCash)}
           </span>
         </div>
@@ -406,7 +406,7 @@ export default function App() {
       <div className="lead-box">
         {(!isLeadCaptured || isEditingContact) ? (
           <form onSubmit={handleLeadSubmit}>
-            <label className="label-text" style={{ color: '#F5E6C4' }}>Save & Generate Diagnostic PDF Report</label>
+            <label className="label-text" style={{ color: '#F5E6C4' }}>Save Diagnostic Report</label>
             <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>
               Enter your details to generate your professional print-ready CPA discussion summary.
             </p>
@@ -416,7 +416,7 @@ export default function App() {
             <input className="manual-input" style={{ marginTop: '6px' }} value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this calculator? (optional)" maxLength={400} />
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '12px', color: '#E2E8F0', cursor: 'pointer' }}>
               <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} />
-              I consent to receiving follow-up communication regarding this report and bookkeeping services from Monique Reid Bookkeeping. (Optional)
+              I agree that Monique Reid Bookkeeping may contact me about this report and bookkeeping services. This is optional and is not required to calculate or print the report.
             </label>
             <button type="submit" disabled={saving} className="cta-btn" style={{ marginTop: '12px' }}>
               {saving ? 'Saving...' : 'Save Diagnostic Report'}
@@ -426,7 +426,7 @@ export default function App() {
           <div style={{ textAlign: 'center' }}>
             <p style={{ color: '#34D399', fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>✓ Diagnostic Session Recorded</p>
             <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '12px' }}>
-              You have previously saved your session on this browser. You can generate fresh reports instantly or edit your contact information.
+              You have previously saved your session on this browser. You can create a new report or edit your contact information.
             </p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button type="button" className="cta-btn" onClick={() => setIsEditingContact(true)} style={{ marginTop: 0 }}>
