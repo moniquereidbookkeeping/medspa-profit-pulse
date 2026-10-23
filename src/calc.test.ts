@@ -91,3 +91,15 @@ test('validates platform default fee mappings and green alert level for high con
   assert.ok(result.yourRealKeepPercentagePct >= 40);
   assert.equal(result.alertLevel, 'green');
 });
+
+
+test('zero-price input does not display a misleading green assessment', () => {
+  const result = calculateProfitPulseMetrics({
+    price: 0, wholesaleCost: 0, hourlyOverhead: 0, feeRatePct: 3, sessions: 1,
+    treatmentType: 'single', wasteCushionPct: 0, commissionPct: 0,
+  });
+  assert.equal(result.yourRealKeepPercentagePct, 0);
+  assert.equal(result.alertLevel, 'green');
+  assert.match(result.alertMessage, /Enter a treatment price greater than \$0/);
+  assert.equal(result.showMarginWarning, false);
+});
