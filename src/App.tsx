@@ -165,7 +165,7 @@ export default function App() {
 
       const result = await response.json().catch(() => ({}));
       if (!response.ok || result.saved !== true) {
-        throw new Error('Server did not confirm save.');
+        throw new Error(String(result.detail || result.error || 'Server did not confirm save.'));
       }
 
       try { localStorage.setItem(LEAD_CAPTURED_KEY, 'true'); } catch (storageError) { console.warn('Could not remember capture preference', storageError); }
@@ -174,7 +174,8 @@ export default function App() {
       setSaveMessage('Report saved to your practice tracker. Use “Print / Save Report” below when you are ready.');
     } catch (error) {
       console.error('Remote save failed', error);
-      setSaveMessage('The report could not be saved to the practice tracker. You can still print or save a copy below, and retry saving.');
+      const reason = error instanceof Error ? error.message : 'Unknown submission error';
+      setSaveMessage('Save failed: ' + reason + '. You can still print a copy below and retry saving.');
     } finally {
       setSaving(false);
     }
