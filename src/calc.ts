@@ -81,7 +81,7 @@ export function calculateProfitPulseMetrics(i: ProfitPulseInputs): ProfitPulseOu
   const takeawayPerVisit = money(yourRealTakeawayCash / sessions);
 
   // Dynamic 3-tier contribution alert thresholds
-  let alertLevel: 'green' | 'amber' | 'red' = 'green';
+  let alertLevel: 'green' | 'amber' | 'red' = price > 0 ? 'green' : 'amber';
   let alertMessage = price > 0 ? 'Estimated treatment contribution is relatively strong.' : 'Enter a treatment price greater than $0 to assess estimated contribution.';
 
   if (price > 0) {
