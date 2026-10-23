@@ -1,0 +1,29 @@
+name: Quality checks
+
+on:
+  push:
+    branches:
+      - main
+      - upgrade/production-safety-review
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install existing dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run calculation tests
+        run: npm run test
+      - name: Type-check project
+        run: npm run lint
+      - name: Build production assets
+        run: npm run build
