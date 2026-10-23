@@ -70,19 +70,19 @@ export function calculateProfitPulseMetrics(i: ProfitPulseInputs): ProfitPulseOu
   const roomOperationalExpense = money(overhead * sessions);
   const totalOutflows = money(hiddenPlatformFees + totalCostOfMaterials + providerPayrollCut + roomOperationalExpense);
   const yourRealTakeawayCash = money(price - totalOutflows);
-  const yourRealKeepPercentagePct = price ? pct(100 * yourRealTakeawayCash / price) : 0;
+  const yourRealKeepPercentagePct = price > 0 ? pct(100 * yourRealTakeawayCash / price) : 0;
   
   const deferredPct = sessions > 1 ? pct(100 * (sessions - 1) / sessions) : 0;
   const showDeferredWarning = i.treatmentType === 'package' && sessions > 1;
   const deferredWarningText = `Package caution: If ${sessions} sessions are prepaid and none have been delivered, some revenue may need to be deferred until services are performed. The calculation assumes even per-session costs; recognize revenue according to your accounting policy and applicable rules.`;
   
-  const showMarginWarning = price > 0 && yourRealKeepPercentagePct < 35;
+  const showMarginWarning = price > 0 && yourRealKeepPercentagePct < 30;
   const marginWarningText = 'Low estimated treatment contribution (under 35%). This is an illustrative alert threshold, not an industry benchmark. Review overhead and provider-pay assumptions.';
   const takeawayPerVisit = money(yourRealTakeawayCash / sessions);
 
   // Dynamic 3-tier contribution alert thresholds
   let alertLevel: 'green' | 'amber' | 'red' = 'green';
-  let alertMessage = 'Estimated treatment contribution is relatively strong.';
+  let alertMessage = price > 0 ? 'Estimated treatment contribution is relatively strong.' : 'Enter a treatment price greater than $0 to assess estimated contribution.';
 
   if (price > 0) {
     if (yourRealKeepPercentagePct < 30) {
