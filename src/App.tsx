@@ -276,7 +276,7 @@ export default function App() {
               max="24" 
               step="1" 
               disabled={treatmentType === 'single'} 
-              onChange={(e) => startTransition(() => setSessions(Math.min(24, Math.max(1, parseInt(e.target.value, 10) || 1)))} 
+              onChange={(e) => startTransition(() => setSessions(Math.min(24, Math.max(1, parseInt(e.target.value, 10) || 1))))} 
             />
           </div>
         </div>
