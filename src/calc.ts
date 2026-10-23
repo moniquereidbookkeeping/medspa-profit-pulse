@@ -77,7 +77,7 @@ export function calculateProfitPulseMetrics(i: ProfitPulseInputs): ProfitPulseOu
   const deferredWarningText = `Package caution: If ${sessions} sessions are prepaid and none have been delivered, some revenue may need to be deferred until services are performed. The calculation assumes even per-session costs; recognize revenue according to your accounting policy and applicable rules.`;
   
   const showMarginWarning = price > 0 && yourRealKeepPercentagePct < 30;
-  const marginWarningText = 'Low estimated treatment contribution (under 35%). This is an illustrative alert threshold, not an industry benchmark. Review overhead and provider-pay assumptions.';
+  const marginWarningText = 'Low estimated treatment contribution (under 30%). This is an illustrative alert threshold, not an industry benchmark. Review overhead and provider-pay assumptions.';
   const takeawayPerVisit = money(yourRealTakeawayCash / sessions);
 
   // Dynamic 3-tier contribution alert thresholds
