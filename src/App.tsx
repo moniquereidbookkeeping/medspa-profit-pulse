@@ -121,6 +121,8 @@ export default function App() {
     setFeedback("");
     setContactConsent(false);
     setSaveMessage("");
+    setIsLeadCaptured(false);
+    setIsEditingContact(false);
   };
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
