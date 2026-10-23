@@ -127,6 +127,10 @@ export default function App() {
     e.preventDefault();
     if (saving) return;
 
+    if (!ownerName.trim() || !practiceName.trim() || !phone.trim()) {
+      setSaveMessage('Please enter your name, practice name, and mobile number to generate your diagnostic report.');
+      return;
+    }
     if (phone.trim()) {
       const digits = phone.replace(/\D/g, '');
       if (digits.length < 10 || digits.length > 15) {
@@ -164,18 +168,15 @@ export default function App() {
         throw new Error('Server did not confirm save.');
       }
 
-      localStorage.setItem(LEAD_CAPTURED_KEY, 'true');
+      try { localStorage.setItem(LEAD_CAPTURED_KEY, 'true'); } catch (storageError) { console.warn('Could not remember capture preference', storageError); }
       setIsLeadCaptured(true);
       setIsEditingContact(false);
-      setSaveMessage('Report successfully saved to your practice tracker.');
+      setSaveMessage('Report saved to your practice tracker. Use “Print / Save Report” below when you are ready.');
     } catch (error) {
       console.error('Remote save failed', error);
-      localStorage.setItem(LEAD_CAPTURED_KEY, 'true');
-      setIsLeadCaptured(true);
-      setSaveMessage('Cloud save unavailable. Your report is generated and ready to print/export.');
+      setSaveMessage('The report could not be saved to the practice tracker. You can still print or save a copy below, and retry saving.');
     } finally {
       setSaving(false);
-      window.print();
     }
   };
 
@@ -188,7 +189,10 @@ export default function App() {
       {/* Print-Only Professional CPA-Ready Diagnostic Header */}
       <div className="print-header-brand">
         <h1>MONIQUE REID BOOKKEEPING</h1>
-        <p>Secure Virtual Solutions • MedSpa Treatment Profitability Diagnostic</p>
+        <p>MedSpa Treatment Profitability Diagnostic</p>
+        <p className="print-report-date">Report date: {new Date().toLocaleDateString('en-US')}</p>
+        <p className="print-contact-details">Practice: {practiceName || 'Not provided'} • Prepared for: {ownerName || 'Not provided'}</p>
+        <p>Platform: {paymentPlatform} • Treatment: {category} • Structure: {treatmentType === 'single' ? 'Single visit' : `${sessions}-session package`}</p>
         <hr className="print-divider" />
       </div>
 
@@ -246,7 +250,7 @@ export default function App() {
             step="0.1" 
             min="0" 
             max="30" 
-            onChange={(e) => startTransition(() => setFeeRatePct(Math.max(0, parseFloat(e.target.value) || 0)))} 
+            onChange={(e) => startTransition(() => setFeeRatePct(Math.min(30, Math.max(0, parseFloat(e.target.value) || 0)))} 
           />
         </div>
       </div>
@@ -282,7 +286,7 @@ export default function App() {
         <label className="label-text">What Does the Client Pay You? ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <input type="number" className="manual-input" value={price} min="0" step="10" onChange={(e) => startTransition(() => setPrice(Math.max(0, parseFloat(e.target.value) || 0)))} />
+          <input type="number" className="manual-input" value={price} min="0" step="10" onChange={(e) => startTransition(() => setPrice(Math.min(100000000, Math.max(0, parseFloat(e.target.value) || 0)))} />
         </div>
       </div>
 
@@ -295,7 +299,7 @@ export default function App() {
       </div>
 
       <div className="input-group">
-        <label className="label-text">Estimated Room Overhead per Hour ($)</label>
+        <label className="label-text">Estimated Room Overhead per Visit ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
           <input type="number" className="manual-input" value={hourlyOverhead} min="0" step="5" onChange={(e) => startTransition(() => setHourlyOverhead(Math.max(0, parseFloat(e.target.value) || 0)))} />
@@ -352,7 +356,7 @@ export default function App() {
           </span>
         </div>
         <div className="result-row" style={{ marginBottom: '12px' }}>
-          <span>Estimated Keep Percentage</span>
+          <span>Estimated Treatment Contribution Percentage</span>
           <span className="margin-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 35 ? '#FBBF24' : '#34D399' }}>
             {metrics.yourRealKeepPercentagePct}%
           </span>
@@ -370,7 +374,7 @@ export default function App() {
           <span>{formatCurrency(metrics.providerPayrollCut)}</span>
         </div>
         <div className="result-row">
-          <span>Room Operational Expense</span>
+          <span>Estimated Room / Operational Expense (per visit × sessions)</span>
           <span>{formatCurrency(metrics.roomOperationalExpense)}</span>
         </div>
         <div className="result-row" style={{ borderTop: '1px solid rgba(30, 41, 59, 0.6)', paddingTop: '6px', color: '#E2E8F0' }}>
@@ -405,16 +409,16 @@ export default function App() {
             <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>
               Enter your details to generate your professional print-ready CPA discussion summary.
             </p>
-            <input className="manual-input" style={{ marginTop: '6px' }} value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Owner Name (optional)" maxLength={100} />
-            <input className="manual-input" style={{ marginTop: '6px' }} value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice Name (optional)" maxLength={120} />
-            <input type="tel" className="manual-input" style={{ marginTop: '6px' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile Phone Number (optional)" maxLength={25} />
+            <input className="manual-input" style={{ marginTop: '6px' }} value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Owner Name (required)" aria-label="Owner name" required maxLength={100} />
+            <input className="manual-input" style={{ marginTop: '6px' }} value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice Name (required)" aria-label="Practice name" required maxLength={120} />
+            <input type="tel" className="manual-input" style={{ marginTop: '6px' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile Phone Number (required)" aria-label="Mobile phone number" required maxLength={25} />
             <input className="manual-input" style={{ marginTop: '6px' }} value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this calculator? (optional)" maxLength={400} />
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '12px', color: '#E2E8F0', cursor: 'pointer' }}>
               <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} />
-              I consent to receiving follow-up communication regarding this report and bookkeeping services from Monique Reid Bookkeeping.
+              I consent to receiving follow-up communication regarding this report and bookkeeping services from Monique Reid Bookkeeping. (Optional)
             </label>
             <button type="submit" disabled={saving} className="cta-btn" style={{ marginTop: '12px' }}>
-              {saving ? 'Saving...' : 'Save & Print Diagnostic Report 📄'}
+              {saving ? 'Saving...' : 'Save Diagnostic Report'}
             </button>
           </form>
         ) : (
@@ -435,12 +439,14 @@ export default function App() {
         )}
 
         {saveMessage && <p role="status" style={{ marginTop: '10px', fontSize: '12px', color: '#F5E6C4' }}>{saveMessage}</p>}
+        <button type="button" className="secondary-cta-btn print-report-btn" onClick={() => window.print()} style={{ marginTop: '12px' }}>Print / Save Report</button>
       </div>
 
       <a href="https://www.moniquereidbookkeeping.com/" target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
         Visit Monique Reid Bookkeeping
       </a>
 
+      <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
       <p className="footer-text">
         DISCLAIMER: Estimates are generated based on your manual inputs for planning and discussion with your accountant. Not a CPA audit, tax, or legal opinion.<br/>
         CONFIDENTIAL CLINIC BENCHMARKING ENGINE • MONIQUE REID BOOKKEEPING
