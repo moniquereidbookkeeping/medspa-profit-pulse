@@ -39,8 +39,8 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     if (raw.length > 12000) return json({saved:false,error:'Request too large'},413);
     const data = JSON.parse(raw);
     if (!data || typeof data !== 'object' || Array.isArray(data)) return json({saved:false,error:'Invalid request'},400);
-    const nums = ['sessions','price','wholesaleCost','wasteCushionPct','feeRatePct','hourlyOverhead','commissionPct','totalCostOfMaterials','hiddenPlatformFees','providerPayrollCut','roomOperationalExpense','totalOutflows','contribution','margin'];
-    if (nums.some(k => typeof data[k] !== 'number' || !Number.isFinite(data[k]) || Math.abs(data[k]) > 1e8)) return json({saved:false,error:'Invalid numeric input'},400);
+    const inputNums = ['sessions','price','wholesaleCost','wasteCushionPct','feeRatePct','hourlyOverhead','commissionPct'];
+    if (inputNums.some(k => typeof data[k] !== 'number' || !Number.isFinite(data[k]) || Math.abs(data[k]) > 1e8)) return json({saved:false,error:'Invalid numeric input'},400);
     const platform = String(data.paymentPlatform || '');
     const allowedPlatforms = [
       'Regular Card Processing (Stripe, Vagaro, Square)',
@@ -51,14 +51,27 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       'Custom Platform Fee Override'
     ];
     if (!['injectables','lasers','facials'].includes(data.category) || !allowedPlatforms.includes(platform) || !['single','package'].includes(data.treatmentType)) return json({saved:false,error:'Invalid selection'},400);
-    if (data.price < 0 || data.wholesaleCost < 0 || data.hourlyOverhead < 0 || data.feeRatePct < 0 || data.feeRatePct > 30 || data.sessions < 1 || data.sessions > 24 || data.wasteCushionPct < 0 || data.wasteCushionPct > 50 || data.commissionPct < 0 || data.commissionPct > 100) return json({saved:false,error:'Numeric value outside allowed range'},400);
+    if (data.price < 0 || data.wholesaleCost < 0 || data.hourlyOverhead < 0 || data.feeRatePct < 0 || data.feeRatePct > 30 || !Number.isInteger(data.sessions) || data.sessions < 1 || data.sessions > 24 || data.wasteCushionPct < 0 || data.wasteCushionPct > 50 || data.commissionPct < 0 || data.commissionPct > 100) return json({saved:false,error:'Numeric value outside allowed range'},400);
+    if (data.treatmentType === 'single' && data.sessions !== 1) return json({saved:false,error:'Single-visit reports must have exactly one session'},400);
+    const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+    const roundPct = (value: number) => Math.round((value + Number.EPSILON) * 10) / 10;
+    const sessions = data.treatmentType === 'single' ? 1 : data.sessions;
+    const totalCostOfMaterials = roundMoney(data.wholesaleCost * sessions * (1 + data.wasteCushionPct / 100));
+    const hiddenPlatformFees = roundMoney(data.price * data.feeRatePct / 100);
+    const providerPayrollCut = roundMoney(data.price * data.commissionPct / 100);
+    const roomOperationalExpense = roundMoney(data.hourlyOverhead * sessions);
+    const totalOutflows = roundMoney(totalCostOfMaterials + hiddenPlatformFees + providerPayrollCut + roomOperationalExpense);
+    const contribution = roundMoney(data.price - totalOutflows);
+    const margin = data.price > 0 ? roundPct(100 * contribution / data.price) : 0;
     const id = String(data.reportId || '');
     if (!/^[0-9a-f-]{36}$/i.test(id)) return json({saved:false,error:'Invalid report ID'},400);
     const trim = (v: unknown, max: number) => String(v ?? '').slice(0,max);
     const phone = trim(data.phone,25);
     const consent = data.contactConsent === true;
     if (consent && !/^\+?[0-9 ()-]{10,25}$/.test(phone)) return json({saved:false,error:'A valid phone is required for follow-up permission'},400);
-    const safe = { ...Object.fromEntries(nums.map(k=>[k,data[k]])), reportId:id,
+    const safe = { sessions, price:data.price, wholesaleCost:data.wholesaleCost, wasteCushionPct:data.wasteCushionPct,
+      feeRatePct:data.feeRatePct, hourlyOverhead:data.hourlyOverhead, commissionPct:data.commissionPct,
+      totalCostOfMaterials, hiddenPlatformFees, providerPayrollCut, roomOperationalExpense, totalOutflows, contribution, margin, reportId:id,
       ownerName:trim(data.ownerName,100), practiceName:trim(data.practiceName,120), phone,
       contactConsent:consent, feedback:trim((platform ? 'Selected platform: ' + platform + '. ' : '') + String(data.feedback || ''),400), category:data.category,
       paymentMethod:platform.startsWith('Cherry Financing') ? 'cherry' : 'card',treatmentType:data.treatmentType,
