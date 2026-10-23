@@ -1,4 +1,32 @@
 interface Env { APPS_SCRIPT_URL: string; REPORT_SHARED_SECRET: string; }
+const jsonResponse = (body: object, status = 200) => new Response(JSON.stringify(body), {
+  status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
+});
+
+// Safe operational check: never return the configured URL or shared secret.
+export const onRequestGet = async ({ env }: { env: Env }): Promise<Response> => {
+  if (!env.APPS_SCRIPT_URL || !env.REPORT_SHARED_SECRET) {
+    return jsonResponse({ status: 'not_configured', message: 'Cloudflare Pages environment variables are missing.' }, 503);
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(env.APPS_SCRIPT_URL, { method: 'GET', signal: controller.signal, redirect: 'follow' });
+    const body = await response.text();
+    let upstream: any = {};
+    try { upstream = JSON.parse(body); } catch { /* non-JSON response is reported without body */ }
+    if (!response.ok || upstream.status !== 'ready' || upstream.submissionsTabFound !== true) {
+      return jsonResponse({ status: 'upstream_not_ready', httpStatus: response.status, message: 'Apps Script did not confirm that the Submissions tab is ready.' }, 502);
+    }
+    return jsonResponse({ status: 'ready', message: 'Cloudflare configuration and Apps Script health check passed.' });
+  } catch (error) {
+    console.error('Apps Script health check failed', error instanceof Error ? error.name : 'Unknown error');
+    return jsonResponse({ status: 'upstream_unreachable', message: 'Cloudflare could not reach the Apps Script health check.' }, 502);
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 export const onRequestPost = async ({ request, env }: { request: Request; env: Env }): Promise<Response> => {
   const json = (body: object, status: number) => new Response(JSON.stringify(body), {
     status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
@@ -43,10 +71,15 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     const text = await res.text();
     let result: any;
     try {result=JSON.parse(text);} catch {result={};}
-    if(!res.ok || result.saved !== true || result.reportId !== id) return json({saved:false,error:'Spreadsheet save not confirmed'},502);
+    if (!res.ok || result.saved !== true || result.reportId !== id) {
+      const reason = typeof result.error === 'string' ? result.error : 'Apps Script returned an unrecognized response';
+      console.error('Apps Script rejected report submission', { httpStatus: res.status, reason });
+      return json({ saved: false, error: 'Spreadsheet save not confirmed', detail: reason }, 502);
+    }
     return json({saved:true,reportId:id},200);
   } catch(e) {
-    console.error('Submission failed', e);
-    return json({saved:false,error:'Submission failed'},502);
+    const timedOut = e instanceof Error && e.name === 'AbortError';
+    console.error('Submission failed', timedOut ? 'Apps Script request timed out' : (e instanceof Error ? e.name : 'Unknown error'));
+    return json({ saved: false, error: timedOut ? 'Apps Script request timed out' : 'Submission failed; check the report endpoint health and Cloudflare logs.' }, 502);
   }
 };
