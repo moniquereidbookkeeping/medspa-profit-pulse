@@ -250,7 +250,7 @@ export default function App() {
             step="0.1" 
             min="0" 
             max="30" 
-            onChange={(e) => startTransition(() => setFeeRatePct(Math.min(30, Math.max(0, parseFloat(e.target.value) || 0)))} 
+            onChange={(e) => startTransition(() => setFeeRatePct(Math.min(30, Math.max(0, parseFloat(e.target.value) || 0))))} 
           />
         </div>
       </div>
@@ -286,7 +286,7 @@ export default function App() {
         <label className="label-text">What Does the Client Pay You? ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <input type="number" className="manual-input" value={price} min="0" step="10" onChange={(e) => startTransition(() => setPrice(Math.min(100000000, Math.max(0, parseFloat(e.target.value) || 0)))} />
+          <input type="number" className="manual-input" value={price} min="0" step="10" onChange={(e) => startTransition(() => setPrice(Math.min(100000000, Math.max(0, parseFloat(e.target.value) || 0))))} />
         </div>
       </div>
 
