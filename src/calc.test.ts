@@ -99,7 +99,7 @@ test('zero-price input does not display a misleading green assessment', () => {
     treatmentType: 'single', wasteCushionPct: 0, commissionPct: 0,
   });
   assert.equal(result.yourRealKeepPercentagePct, 0);
-  assert.equal(result.alertLevel, 'green');
+  assert.equal(result.alertLevel, 'amber');
   assert.match(result.alertMessage, /Enter a treatment price greater than \$0/);
   assert.equal(result.showMarginWarning, false);
 });
