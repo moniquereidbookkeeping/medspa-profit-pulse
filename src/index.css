@@ -325,9 +325,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 }
 
 /* Print-Only DOM Header & Footer for Date/Time & Page Numbers */
-.print-top-meta, .print-bottom-meta, .print-header-brand {
-  display: none;
-}
+.print-top-meta, .print-bottom-meta, .print-header-brand, .print-assumptions { display: none; }
 
 @media print {
   @page {
@@ -421,7 +419,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   button,
   input[type="range"],
   form,
-  .secondary-cta-btn,
+  .secondary-cta-btn:not(.print-report-btn),
+  .print-report-btn,
   .reset-link-btn,
   select.manual-input,
   .lead-box,
@@ -491,6 +490,10 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
     font-weight: 900 !important;
   }
 
+  .print-assumptions { display: block !important; color: #000 !important; font-size: 9.5pt !important; margin-top: 18px !important; line-height: 1.5 !important; }
+  .print-assumptions p { color: #000 !important; }
+  .print-signature { margin-top: 22px !important; font-weight: 800 !important; text-align: center !important; }
+  .print-report-date, .print-contact-details { text-transform: none !important; letter-spacing: normal !important; }
   .alert-box {
     border: 1px solid #000000 !important;
     background: #f8fafc !important;
