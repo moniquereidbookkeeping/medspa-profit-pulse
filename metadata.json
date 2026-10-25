@@ -1,6 +1,5 @@
 {
-  "name": "MedSpa Margin & Injector Pulse Dashboard",
-  "description": "Precision profit margin calculator and injector compensation dashboard for medical aesthetic clinics.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "name": "The MedSpa Profit Pulse",
+  "description": "Free treatment-level profit calculator for MedSpas by Monique Reid Bookkeeping.",
+  "requestFramePermissions": []
 }

@@ -51,6 +51,12 @@ export const CATEGORY_DEFAULTS = {
   facials: { price: 250, wholesaleCost: 35, hourlyOverhead: 45 },
 } as const;
 
+/** One set of colors for the dollar figure, the percentage, and the banner, so they always agree. */
+export const ALERT_COLORS = { red: '#F87171', amber: '#FBBF24', green: '#34D399' } as const;
+
+export const ALERT_THRESHOLD_NOTE =
+  'Alert levels use illustrative thresholds (amber under 40%, red under 30% estimated contribution). They are planning aids, not industry benchmarks.';
+
 const money = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const pct = (n: number) => Math.round((n + Number.EPSILON) * 10) / 10;
 
@@ -87,10 +93,10 @@ export function calculateProfitPulseMetrics(i: ProfitPulseInputs): ProfitPulseOu
   if (price > 0) {
     if (yourRealKeepPercentagePct < 30) {
       alertLevel = 'red';
-      alertMessage = 'Significant profitability concern. Review your treatment economics and cash-flow assumptions.';
+      alertMessage = 'Estimated contribution is below the 30% alert level. Review your treatment economics and cash-flow assumptions.';
     } else if (yourRealKeepPercentagePct < 40) {
       alertLevel = 'amber';
-      alertMessage = 'Margin squeeze detected. Review your treatment costs, payment fees, and provider compensation.';
+      alertMessage = 'Estimated contribution is below the 40% alert level. Review your treatment costs, payment fees, and provider compensation.';
     }
   }
 

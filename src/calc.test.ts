@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateProfitPulseMetrics, PLATFORM_DEFAULT_FEES } from './calc.ts';
+import { calculateProfitPulseMetrics, PLATFORM_DEFAULT_FEES, ALERT_COLORS } from './calc.ts';
 
 test('calculates single-visit injectables and current low-contribution warning', () => {
   const result = calculateProfitPulseMetrics({
@@ -28,7 +28,7 @@ test('calculates single-visit injectables and current low-contribution warning',
   assert.equal(result.showDeferredWarning, false);
   assert.equal(result.deferredPct, 0);
   assert.equal(result.alertLevel, 'red');
-  assert.match(result.alertMessage, /Significant profitability concern/);
+  assert.match(result.alertMessage, /below the 30% alert level/);
 });
 
 test('calculates a four-session prepaid package and current package caution', () => {
@@ -127,4 +127,21 @@ test('applies custom-entered fee rates through the calculation engine', () => {
   assert.equal(result.hiddenPlatformFees, 112.5);
   assert.equal(result.totalOutflows, 237.5);
   assert.equal(result.yourRealTakeawayCash, 762.5);
+});
+
+test('every alert level maps to exactly one display color (number, percent and banner share it)', () => {
+  const base = { hourlyOverhead: 0, feeRatePct: 0, sessions: 1, treatmentType: 'single' as const, wasteCushionPct: 0, commissionPct: 0, price: 100 };
+  const expectations: Array<[number, 'red' | 'amber' | 'green']> = [[0, 'red'], [25, 'red'], [30, 'amber'], [39, 'amber'], [40, 'green'], [60, 'green']];
+  for (const [keep, level] of expectations) {
+    const r = calculateProfitPulseMetrics({ ...base, wholesaleCost: 100 - keep });
+    assert.equal(r.alertLevel, level, `keep ${keep}%`);
+    assert.ok(ALERT_COLORS[r.alertLevel].startsWith('#'));
+  }
+  assert.equal(new Set(Object.values(ALERT_COLORS)).size, 3);
+});
+
+test('negative cash is always red, even for a price of zero', () => {
+  const r = calculateProfitPulseMetrics({ price: 0, wholesaleCost: 50, hourlyOverhead: 0, feeRatePct: 0, sessions: 1, treatmentType: 'single', wasteCushionPct: 0, commissionPct: 0 });
+  assert.ok(r.yourRealTakeawayCash < 0);
+  assert.equal(r.alertLevel, 'amber', 'asks for a price instead of calling it strong');
 });

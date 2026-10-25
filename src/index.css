@@ -274,6 +274,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .lead-box form .label-text { margin-bottom: 0; }
 .lead-box form p { margin: 0 0 4px; line-height: 1.5; color: #CBD5E1; }
 .lead-box input[type="checkbox"] { flex: 0 0 auto; margin-top: 3px; accent-color: #D4AF37; width: 16px; height: 16px; cursor: pointer; }
+.lead-headline { font-size: 15px !important; font-weight: 800; color: #F5E6C4 !important; letter-spacing: 0.02em; margin: 0 0 2px !important; }
+.hp-field { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; opacity: 0 !important; overflow: hidden; }
+.save-message { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: #F5E6C4; }
+.save-message.save-ok { color: #6EE7B7; }
+.save-message.save-error { color: #FCA5A5; }
+.threshold-note { margin: 8px 2px 0; font-size: 11px; line-height: 1.5; color: #94A3B8; }
+.privacy-note { margin: 18px 0 0; font-size: 11px; line-height: 1.5; color: #94A3B8; text-align: center; }
+.privacy-note a { color: #F5E6C4; text-decoration: underline; }
+.header > p.brand-line { text-transform: none; letter-spacing: 0.04em; font-size: 12px; color: #E5C158; margin-top: 8px; font-weight: 600; }
 
 .cta-btn, .secondary-cta-btn {
   display: inline-flex;
@@ -425,6 +434,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   select.manual-input,
   .lead-box,
   a,
+  .privacy-note,
   .footer-text {
     display: none !important;
   }
@@ -492,6 +502,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 
   .print-assumptions { display: block !important; color: #000 !important; font-size: 9.5pt !important; margin-top: 18px !important; line-height: 1.5 !important; }
   .print-assumptions p { color: #000 !important; }
+  .threshold-note { color: #000 !important; font-size: 9pt !important; }
   .print-signature { margin-top: 22px !important; font-weight: 800 !important; text-align: center !important; }
   .print-report-date, .print-contact-details { text-transform: none !important; letter-spacing: normal !important; }
   .alert-box {

@@ -3,11 +3,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useTransition } from 'react';
-import { calculateProfitPulseMetrics, CATEGORY_DEFAULTS, PLATFORM_DEFAULT_FEES, PaymentPlatform } from './calc';
+import React, { useState, useEffect, useRef } from 'react';
+import { calculateProfitPulseMetrics, ALERT_COLORS, ALERT_THRESHOLD_NOTE, CATEGORY_DEFAULTS, PLATFORM_DEFAULT_FEES, PaymentPlatform } from './calc';
+import NumField from './NumField';
+import Turnstile from './Turnstile';
+import { track } from './analytics';
 
 const STORAGE_KEY = "medspa_profit_pulse_state";
 const LEAD_CAPTURED_KEY = "medspa_profit_pulse_lead_captured";
+
+// ---- Easy-to-edit business settings -------------------------------------------------------
+const SITE_URL = 'https://www.moniquereidbookkeeping.com/';
+/** Swap this for a calendar booking link (Calendly, Google Calendar, etc.) when you have one. */
+const BOOKING_URL = SITE_URL;
+/** Optional: link to your privacy policy. Leave empty to hide the link. */
+const PRIVACY_URL = '';
+const REVIEW_HEADLINE = 'Want a second set of eyes on this?';
+const REVIEW_TEXT = 'Send this result to Monique for a free 15-minute treatment profit review. No obligation.';
+const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) || '';
+// --------------------------------------------------------------------------------------------
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+const withUtm = (url: string, content: string) => {
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'profit-pulse');
+    u.searchParams.set('utm_medium', 'calculator');
+    u.searchParams.set('utm_campaign', 'medspa-profit-pulse');
+    u.searchParams.set('utm_content', content);
+    return u.toString();
+  } catch {
+    return url;
+  }
+};
+
+type SaveStatus = 'idle' | 'saving' | 'ok' | 'error';
 
 export default function App() {
   const [category, setCategory] = useState<'injectables' | 'lasers' | 'facials'>('injectables');
@@ -15,24 +46,36 @@ export default function App() {
   const [feeRatePct, setFeeRatePct] = useState<number>(3.0);
   const [treatmentType, setTreatmentType] = useState<'single' | 'package'>('single');
   const [sessions, setSessions] = useState<number>(1);
-  
+
   const [price, setPrice] = useState<number>(CATEGORY_DEFAULTS.injectables.price);
   const [wholesaleCost, setWholesaleCost] = useState<number>(CATEGORY_DEFAULTS.injectables.wholesaleCost);
   const [hourlyOverhead, setHourlyOverhead] = useState<number>(CATEGORY_DEFAULTS.injectables.hourlyOverhead);
   const [wasteCushionPct, setWasteCushionPct] = useState<number>(10);
   const [commissionPct, setCommissionPct] = useState<number>(30);
 
-  const [phone, setPhone] = useState<string>("");
   const [ownerName, setOwnerName] = useState("");
   const [practiceName, setPracticeName] = useState("");
-  const [contactConsent, setContactConsent] = useState(false);
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState<string>("");
   const [feedback, setFeedback] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [contactConsent, setContactConsent] = useState(false);
+  const [website, setWebsite] = useState(""); // hidden spam trap; real visitors never fill it in
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReset, setTurnstileReset] = useState(0);
+
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveMessage, setSaveMessage] = useState("");
-  
+
   const [isLeadCaptured, setIsLeadCaptured] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
-  const [, startTransition] = useTransition();
+  const engaged = useRef(false);
+
+  const engage = () => {
+    if (!engaged.current) {
+      engaged.current = true;
+      track('calculator_used');
+    }
+  };
 
   // Load from LocalStorage on mount
   useEffect(() => {
@@ -84,6 +127,9 @@ export default function App() {
     commissionPct
   });
 
+  // One color for the dollar figure, the percentage, and the banner.
+  const toneColor = ALERT_COLORS[metrics.alertLevel];
+
   const handleCategoryChange = (cat: 'injectables' | 'lasers' | 'facials') => {
     setCategory(cat);
     const defaults = CATEGORY_DEFAULTS[cat];
@@ -109,86 +155,116 @@ export default function App() {
   };
 
   const handleReset = () => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* storage may be blocked */ }
     handleCategoryChange('injectables');
     handlePlatformChange('Regular Card Processing (Stripe, Vagaro, Square)');
     handleTreatmentTypeChange('single');
     setWasteCushionPct(10);
     setCommissionPct(30);
     setPhone("");
+    setEmail("");
     setOwnerName("");
     setPracticeName("");
     setFeedback("");
     setContactConsent(false);
+    setSaveStatus('idle');
     setSaveMessage("");
     setIsLeadCaptured(false);
     setIsEditingContact(false);
   };
 
+  const fail = (message: string) => {
+    setSaveStatus('error');
+    setSaveMessage(message);
+  };
+
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (saving) return;
+    if (saveStatus === 'saving') return;
 
-    if (!ownerName.trim() || !practiceName.trim() || !phone.trim()) {
-      setSaveMessage('Please enter your name, practice name, and mobile number to generate your diagnostic report.');
-      return;
+    if (!ownerName.trim() || !practiceName.trim()) {
+      return fail('Please enter your name and practice name.');
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      return fail('Please enter a valid email address so Monique can reach you.');
     }
     if (phone.trim()) {
       const digits = phone.replace(/\D/g, '');
       if (digits.length < 10 || digits.length > 15) {
-        setSaveMessage('Please enter a valid mobile number (10-15 digits), or leave blank.');
-        return;
+        return fail('Please enter a valid phone number (10-15 digits) or leave it blank.');
       }
     }
+    if (!contactConsent) {
+      return fail('Please tick the box to confirm Monique may contact you about this review.');
+    }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      return fail('Please complete the verification check below, then try again.');
+    }
 
-    setSaving(true);
-    setSaveMessage('Saving your diagnostic snapshot...');
+    setSaveStatus('saving');
+    setSaveMessage('Sending your request...');
 
     try {
       const reportId = crypto.randomUUID();
-      const response = await fetch('/api/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reportId, ownerName, practiceName, phone: phone.trim(),
-          contactConsent, feedback, category, paymentPlatform,
-          treatmentType, sessions, price, wholesaleCost,
-          wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct,
-          totalCostOfMaterials: metrics.totalCostOfMaterials,
-          hiddenPlatformFees: metrics.hiddenPlatformFees,
-          providerPayrollCut: metrics.providerPayrollCut,
-          roomOperationalExpense: metrics.roomOperationalExpense,
-          totalOutflows: metrics.totalOutflows,
-          contribution: metrics.yourRealTakeawayCash,
-          margin: metrics.yourRealKeepPercentagePct,
-          source: 'MedSpa Profit Pulse'
-        })
-      });
+      let response: Response;
+      try {
+        response = await fetch('/api/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reportId, ownerName, practiceName, email: email.trim(), phone: phone.trim(),
+            contactConsent, feedback, website, turnstileToken,
+            category, paymentPlatform, treatmentType, sessions, price, wholesaleCost,
+            wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct,
+            source: 'MedSpa Profit Pulse'
+          })
+        });
+      } catch {
+        throw new Error('We could not reach the server. Please check your connection.');
+      }
 
       const result = await response.json().catch(() => ({}));
       if (!response.ok || result.saved !== true) {
-        throw new Error(String(result.detail || result.error || 'Server did not confirm save.'));
+        // Messages for 4xx errors are written for visitors; anything else gets a generic line.
+        const friendly = response.status >= 400 && response.status < 500 && typeof result.error === 'string'
+          ? result.error
+          : 'We could not save your details right now.';
+        throw new Error(friendly);
       }
 
       try { localStorage.setItem(LEAD_CAPTURED_KEY, 'true'); } catch (storageError) { console.warn('Could not remember capture preference', storageError); }
       setIsLeadCaptured(true);
       setIsEditingContact(false);
-      setSaveMessage('Report saved to your practice tracker. Use “Print / Save Report” below when you are ready.');
+      setSaveStatus('ok');
+      setSaveMessage('Request received. Monique will follow up at ' + email.trim() + '. You can also print or save your report below.');
+      track('review_requested', { alert: metrics.alertLevel, category });
     } catch (error) {
       console.error('Remote save failed', error);
-      const reason = error instanceof Error ? error.message : 'Unknown submission error';
-      setSaveMessage('Save failed: ' + reason + '. You can still print a copy below and retry saving.');
-    } finally {
-      setSaving(false);
+      const reason = error instanceof Error ? error.message : 'We could not save your details right now.';
+      fail(reason + ' Your results are still on screen. You can print or save them below and try again in a minute.');
+      setTurnstileToken('');
+      setTurnstileReset(n => n + 1);
+      track('review_request_failed');
     }
+  };
+
+  const handlePrint = () => {
+    track('report_printed');
+    window.print();
   };
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
   };
 
+  const tabs: { id: 'injectables' | 'lasers' | 'facials'; label: string }[] = [
+    { id: 'injectables', label: 'Injectables' },
+    { id: 'lasers', label: 'Lasers & Devices' },
+    { id: 'facials', label: 'Facials & Skin' }
+  ];
+
   return (
-    <div className="app-card">
+    <div className="app-card" onChange={engage}>
       {/* Print-Only Professional CPA-Ready Diagnostic Header */}
       <div className="print-header-brand">
         <h1>MONIQUE REID BOOKKEEPING</h1>
@@ -212,19 +288,29 @@ export default function App() {
         </div>
         <h1>THE MEDSPA PROFIT PULSE</h1>
         <p>Find Missing Cash In Your Menu</p>
+        <p className="brand-line">A free tool by Monique Reid Bookkeeping</p>
       </div>
 
       {/* Category Tabs */}
-      <div className="tab-container" role="tablist">
-        <button onClick={() => handleCategoryChange('injectables')} className={`tab-btn ${category === 'injectables' ? 'active' : ''}`} role="tab">Injectables</button>
-        <button onClick={() => handleCategoryChange('lasers')} className={`tab-btn ${category === 'lasers' ? 'active' : ''}`} role="tab">Lasers & Devices</button>
-        <button onClick={() => handleCategoryChange('facials')} className={`tab-btn ${category === 'facials' ? 'active' : ''}`} role="tab">Facials & Skin</button>
+      <div className="tab-container" role="tablist" aria-label="Treatment category">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={category === t.id}
+            onClick={() => { engage(); handleCategoryChange(t.id); }}
+            className={`tab-btn ${category === t.id ? 'active' : ''}`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Payment Platform Dropdown */}
       <div className="input-group">
         <label className="label-text" htmlFor="platform-select">Choose Payment/Financing Platform</label>
-        <select 
+        <select
           id="platform-select"
           className="manual-input"
           value={paymentPlatform}
@@ -238,47 +324,40 @@ export default function App() {
           <option value="Custom Platform Fee Override">🛠️ Custom Platform Fee Override</option>
         </select>
         <span className="label-sub" style={{ marginTop: '4px', display: 'block', color: '#94A3B8' }}>
-          Illustrative default rate: {feeRatePct}% (Editable below)
+          Illustrative default rate: {feeRatePct}%. Replace it with the rate on your own statements.
         </span>
       </div>
 
       {/* Fee Rate Input */}
       <div className="input-group">
-        <label className="label-text">Effective Platform Fee Rate (%)</label>
+        <label className="label-text" htmlFor="fee-rate">Effective Platform Fee Rate (%)</label>
         <div className="currency-input-wrap">
-          <input 
-            type="number" 
-            className="manual-input" 
-            value={feeRatePct} 
-            step="0.1" 
-            min="0" 
-            max="30" 
-            onChange={(e) => startTransition(() => setFeeRatePct(Math.min(30, Math.max(0, parseFloat(e.target.value) || 0))))} 
-          />
+          <NumField id="fee-rate" className="manual-input" value={feeRatePct} min={0} max={30} step={0.1} onChange={setFeeRatePct} />
         </div>
       </div>
 
       {/* Treatment Type Setup */}
       <div className="input-group">
-        <span className="label-text">
+        <span className="label-text" id="structure-label">
           Treatment Structure
           <span className="label-sub">{treatmentType === 'single' ? '1 visit' : `${sessions} visits`}</span>
         </span>
         <div className="input-row-split">
-          <div className="toggle-container" role="radiogroup">
-            <button onClick={() => handleTreatmentTypeChange('single')} className={`toggle-btn ${treatmentType === 'single' ? 'active' : ''}`} role="radio">Single Visit</button>
-            <button onClick={() => handleTreatmentTypeChange('package')} className={`toggle-btn ${treatmentType === 'package' ? 'active' : ''}`} role="radio">📦 Multi-Session</button>
+          <div className="toggle-container" role="radiogroup" aria-labelledby="structure-label">
+            <button type="button" onClick={() => { engage(); handleTreatmentTypeChange('single'); }} className={`toggle-btn ${treatmentType === 'single' ? 'active' : ''}`} role="radio" aria-checked={treatmentType === 'single'}>Single Visit</button>
+            <button type="button" onClick={() => { engage(); handleTreatmentTypeChange('package'); }} className={`toggle-btn ${treatmentType === 'package' ? 'active' : ''}`} role="radio" aria-checked={treatmentType === 'package'}>📦 Multi-Session</button>
           </div>
           <div>
-            <input 
-              type="number" 
-              className="manual-input rate-suffix-input" 
-              value={sessions} 
-              min="1" 
-              max="24" 
-              step="1" 
-              disabled={treatmentType === 'single'} 
-              onChange={(e) => startTransition(() => setSessions(Math.min(24, Math.max(1, parseInt(e.target.value, 10) || 1))))} 
+            <NumField
+              aria-label="Number of sessions"
+              className="manual-input rate-suffix-input"
+              value={sessions}
+              min={1}
+              max={24}
+              step={1}
+              integer
+              disabled={treatmentType === 'single'}
+              onChange={setSessions}
             />
           </div>
         </div>
@@ -286,66 +365,66 @@ export default function App() {
 
       {/* Financial Inputs */}
       <div className="input-group">
-        <label className="label-text">What Does the Client Pay You? ($)</label>
+        <label className="label-text" htmlFor="price">What Does the Client Pay You? ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <input type="number" className="manual-input" value={price} min="0" step="10" onChange={(e) => startTransition(() => setPrice(Math.min(100000000, Math.max(0, parseFloat(e.target.value) || 0))))} />
+          <NumField id="price" className="manual-input" value={price} min={0} max={100000000} step={10} onChange={setPrice} />
         </div>
       </div>
 
       <div className="input-group">
-        <label className="label-text">Wholesale Cost of Products/Boxes Used ($)</label>
+        <label className="label-text" htmlFor="wholesale">Wholesale Cost of Products/Boxes Used ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <input type="number" className="manual-input" value={wholesaleCost} min="0" step="5" onChange={(e) => startTransition(() => setWholesaleCost(Math.min(100000000, Math.max(0, parseFloat(e.target.value) || 0))))} />
+          <NumField id="wholesale" className="manual-input" value={wholesaleCost} min={0} max={100000000} step={5} onChange={setWholesaleCost} />
         </div>
       </div>
 
       <div className="input-group">
-        <label className="label-text">Estimated Room Overhead per Visit ($)</label>
+        <label className="label-text" htmlFor="overhead">Estimated Room Overhead per Visit ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <input type="number" className="manual-input" value={hourlyOverhead} min="0" step="5" onChange={(e) => startTransition(() => setHourlyOverhead(Math.min(100000000, Math.max(0, parseFloat(e.target.value) || 0))))} />
+          <NumField id="overhead" className="manual-input" value={hourlyOverhead} min={0} max={100000000} step={5} onChange={setHourlyOverhead} />
         </div>
       </div>
 
       {/* Sliders with Manual Number Inputs */}
       <div className="input-group">
         <div className="slider-header">
-          <span className="label-text" style={{ margin: 0 }}>Product Waste/Spill Cushion</span>
+          <label className="label-text" htmlFor="waste-number" style={{ margin: 0 }}>Product Waste/Spill Cushion</label>
           <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#020617', border: '1px solid #1E293B', borderRadius: '6px', padding: '2px 6px', maxWidth: '75px' }}>
-            <input 
-              type="number" 
-              value={wasteCushionPct} 
-              min="0" 
-              max="50" 
-              step="1"
-              onChange={(e) => startTransition(() => setWasteCushionPct(Math.min(50, Math.max(0, parseFloat(e.target.value) || 0))))} 
-              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
+            <NumField
+              id="waste-number"
+              value={wasteCushionPct}
+              min={0}
+              max={50}
+              step={1}
+              onChange={setWasteCushionPct}
+              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }}
             />
             <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
           </div>
         </div>
-        <input type="range" min="0" max="25" step="5" value={wasteCushionPct} onChange={(e) => startTransition(() => setWasteCushionPct(parseFloat(e.target.value) || 0))} />
+        <input type="range" aria-label="Product waste cushion percent" min="0" max="25" step="5" value={wasteCushionPct} onChange={(e) => setWasteCushionPct(parseFloat(e.target.value) || 0)} />
       </div>
 
       <div className="input-group">
         <div className="slider-header">
-          <span className="label-text" style={{ margin: 0 }}>Provider Commission Cut</span>
+          <label className="label-text" htmlFor="commission-number" style={{ margin: 0 }}>Provider Commission Cut</label>
           <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#020617', border: '1px solid #1E293B', borderRadius: '6px', padding: '2px 6px', maxWidth: '75px' }}>
-            <input 
-              type="number" 
-              value={commissionPct} 
-              min="0" 
-              max="100" 
-              step="1"
-              onChange={(e) => startTransition(() => setCommissionPct(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0))))} 
-              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }} 
+            <NumField
+              id="commission-number"
+              value={commissionPct}
+              min={0}
+              max={100}
+              step={1}
+              onChange={setCommissionPct}
+              style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }}
             />
             <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
           </div>
         </div>
-        <input type="range" min="0" max="50" step="5" value={commissionPct} onChange={(e) => startTransition(() => setCommissionPct(parseFloat(e.target.value) || 0))} />
+        <input type="range" aria-label="Provider commission percent" min="0" max="50" step="5" value={commissionPct} onChange={(e) => setCommissionPct(parseFloat(e.target.value) || 0)} />
       </div>
 
       <hr className="divider" />
@@ -354,13 +433,13 @@ export default function App() {
       <div className="results-panel">
         <div className="result-row total-profit">
           <span>Estimated Treatment Contribution</span>
-          <span className="profit-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 40 ? '#FBBF24' : '#34D399' }}>
+          <span className="profit-text" style={{ color: toneColor }}>
             {formatCurrency(metrics.yourRealTakeawayCash)}
           </span>
         </div>
         <div className="result-row" style={{ marginBottom: '12px' }}>
           <span>Estimated Treatment Contribution Percentage</span>
-          <span className="margin-text" style={{ color: metrics.yourRealTakeawayCash < 0 ? '#F87171' : metrics.yourRealKeepPercentagePct < 35 ? '#FBBF24' : '#34D399' }}>
+          <span className="margin-text" style={{ color: toneColor }}>
             {metrics.yourRealKeepPercentagePct}%
           </span>
         </div>
@@ -397,6 +476,7 @@ export default function App() {
         <strong>{metrics.alertLevel === 'red' ? '🚨 Profitability Concern: ' : metrics.alertLevel === 'amber' ? '🟡 Margin Squeeze: ' : '🟢 Strong Contribution: '}</strong>
         {metrics.alertMessage}
       </div>
+      <p className="threshold-note">{ALERT_THRESHOLD_NOTE}</p>
 
       {metrics.showDeferredWarning && (
         <div className="alert-box alert-warning" role="alert" style={{ display: 'block', marginTop: '10px' }}>
@@ -404,55 +484,59 @@ export default function App() {
         </div>
       )}
 
-      {/* Lead Capture & Returning Visitor State */}
+      {/* Free-review offer (lead capture) & returning visitor state */}
       <div className="lead-box">
         {(!isLeadCaptured || isEditingContact) ? (
           <form onSubmit={handleLeadSubmit}>
-            <label className="label-text" style={{ color: '#F5E6C4' }}>Save Diagnostic Report</label>
-            <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>
-              Enter your details to generate your professional print-ready CPA discussion summary.
-            </p>
-            <input className="manual-input" style={{ marginTop: '6px' }} value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Owner Name (required)" aria-label="Owner name" required maxLength={100} />
-            <input className="manual-input" style={{ marginTop: '6px' }} value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice Name (required)" aria-label="Practice name" required maxLength={120} />
-            <input type="tel" className="manual-input" style={{ marginTop: '6px' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Mobile Phone Number (required)" aria-label="Mobile phone number" required maxLength={25} />
-            <input className="manual-input" style={{ marginTop: '6px' }} value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this calculator? (optional)" maxLength={400} />
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '12px', color: '#E2E8F0', cursor: 'pointer' }}>
-              <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} />
-              I agree that Monique Reid Bookkeeping may contact me about this report and bookkeeping services. This is optional and is not required to calculate or print the report.
+            <p className="lead-headline">{REVIEW_HEADLINE}</p>
+            <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>{REVIEW_TEXT}</p>
+            <input className="manual-input" value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Your name (required)" aria-label="Your name" autoComplete="name" required maxLength={100} />
+            <input className="manual-input" value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice name (required)" aria-label="Practice name" autoComplete="organization" required maxLength={120} />
+            <input type="email" className="manual-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (required)" aria-label="Email address" autoComplete="email" inputMode="email" required maxLength={254} />
+            <input type="tel" className="manual-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone (optional)" aria-label="Phone number, optional" autoComplete="tel" maxLength={25} />
+            <input className="manual-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this? (optional)" aria-label="What would improve this calculator? Optional" maxLength={400} />
+            {/* Spam trap: hidden from people, visible to bots */}
+            <input className="hp-field" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={website} onChange={e => setWebsite(e.target.value)} />
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '4px', color: '#E2E8F0', cursor: 'pointer' }}>
+              <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} required />
+              I agree that Monique Reid Bookkeeping may contact me by email or phone about this review and bookkeeping services. I can opt out at any time.
             </label>
-            <button type="submit" disabled={saving} className="cta-btn" style={{ marginTop: '12px' }}>
-              {saving ? 'Saving...' : 'Save Diagnostic Report'}
+            {TURNSTILE_SITE_KEY && <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} resetSignal={turnstileReset} />}
+            <button type="submit" disabled={saveStatus === 'saving'} className="cta-btn" style={{ marginTop: '4px' }}>
+              {saveStatus === 'saving' ? 'Sending...' : 'Request My Free Review'}
             </button>
           </form>
         ) : (
           <div style={{ textAlign: 'center' }}>
-            <p style={{ color: '#34D399', fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>✓ Diagnostic Session Recorded</p>
+            <p style={{ color: '#34D399', fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>✓ Review request received</p>
             <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '12px' }}>
-              You have previously saved your session on this browser. You can create a new report or edit your contact information.
+              You already sent a request from this browser. Need to send another one with new numbers?
             </p>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button type="button" className="cta-btn" onClick={() => setIsEditingContact(true)} style={{ marginTop: 0 }}>
-                Create a New Diagnostic Report
-              </button>
-              <button type="button" className="secondary-cta-btn" onClick={() => setIsEditingContact(true)} style={{ marginTop: 0 }}>
-                Edit Details
-              </button>
-            </div>
+            <button type="button" className="cta-btn" onClick={() => { setSaveStatus('idle'); setSaveMessage(''); setIsEditingContact(true); }} style={{ marginTop: 0 }}>
+              Send Another Request
+            </button>
           </div>
         )}
 
-        {saveMessage && <p role="status" style={{ marginTop: '10px', fontSize: '12px', color: '#F5E6C4' }}>{saveMessage}</p>}
-        <button type="button" className="secondary-cta-btn print-report-btn" onClick={() => window.print()} style={{ marginTop: '12px' }}>Print / Save Report</button>
+        {saveMessage && (
+          <p role={saveStatus === 'error' ? 'alert' : 'status'} className={`save-message save-${saveStatus}`}>{saveMessage}</p>
+        )}
+        <button type="button" className="secondary-cta-btn print-report-btn" onClick={handlePrint} style={{ marginTop: '12px' }}>Print / Save Report (free, no sign-up)</button>
       </div>
 
-      <a href="https://www.moniquereidbookkeeping.com/" target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
-        Visit Monique Reid Bookkeeping
+      <a href={withUtm(BOOKING_URL, 'results_cta')} onClick={() => track('cta_clicked')} target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
+        See How Monique Helps MedSpas
       </a>
 
       <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
+
+      <p className="privacy-note">
+        Your calculator entries stay in this browser. If you request a review, the details you submit are sent to Monique Reid Bookkeeping so she can follow up.
+        {PRIVACY_URL && <> <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">Privacy policy</a></>}
+      </p>
       <p className="footer-text">
         DISCLAIMER: Estimates are generated based on your manual inputs for planning and discussion with your accountant. Not a CPA audit, tax, or legal opinion.<br/>
-        CONFIDENTIAL CLINIC BENCHMARKING ENGINE • MONIQUE REID BOOKKEEPING
+        MONIQUE REID BOOKKEEPING • SECURE VIRTUAL SOLUTIONS
       </p>
     </div>
   );
