@@ -337,7 +337,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 }
 
 /* Print-Only DOM Header & Footer for Date/Time & Page Numbers */
-.print-top-meta, .print-bottom-meta, .print-header-brand, .print-assumptions { display: none; }
+.print-top-meta, .print-bottom-meta, .print-header-brand, .print-assumptions, .print-lock-note { display: none; }
 
 @media print {
   @page {
@@ -585,4 +585,12 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .print-header-brand { margin-bottom: 8px !important; padding-bottom: 6px !important; }
   .insights-panel { padding: 10px 18px !important; }
   .insights-panel .result-row { margin-bottom: 4px !important; }
+}
+
+@media print {
+  /* No saved details yet: the printout is only a short notice, not the report. */
+  .report-locked > *:not(.print-lock-note) { display: none !important; }
+  .report-locked .print-lock-note { display: block !important; text-align: center; color: #000; padding: 80px 24px; }
+  .report-locked .print-lock-note h1 { font-size: 20pt !important; color: #000 !important; margin: 0 0 16px !important; }
+  .report-locked .print-lock-note p { font-size: 12pt !important; color: #000 !important; margin: 0 0 10px !important; }
 }

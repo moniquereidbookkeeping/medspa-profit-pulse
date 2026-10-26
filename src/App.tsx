@@ -25,7 +25,7 @@ const REVIEW_HEADLINES = {
   amber: 'You are close. Want a quick look at what to tighten?',
   green: 'Strong numbers. Want a second set of eyes on the rest of your menu?'
 } as const;
-const REVIEW_TEXT = 'Send this result to Monique for a free 15-minute treatment profit review. No obligation.';
+const REVIEW_TEXT = 'Enter your details to save your full report. Monique will also follow up about a free 15-minute treatment profit review. No obligation.';
 // --------------------------------------------------------------------------------------------
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -306,8 +306,10 @@ export default function App() {
       setIsLeadCaptured(true);
       setIsEditingContact(false);
       setSaveStatus('ok');
-      setSaveMessage('Request received. Monique will follow up at ' + email.trim() + '. You can also print or save your report below.');
+      setSaveMessage('Thank you. Your report is opening now. If it does not, press the Save My Full Report button below. Monique will follow up at ' + email.trim() + '.');
       track('review_requested', { alert: metrics.alertLevel, category });
+      // The full report opens right after the details are saved. The button below stays available if a browser blocks this.
+      setTimeout(() => { track('report_printed'); window.print(); }, 400);
     } catch (error) {
       console.error('Remote save failed', error);
       const reason = error instanceof Error ? error.message : 'We could not save your details right now.';
@@ -319,6 +321,16 @@ export default function App() {
   };
 
   const handlePrint = () => {
+    if (!isLeadCaptured) {
+      // The full report is the thank-you for sharing contact details: take the visitor to the short form instead.
+      track('report_gate_shown');
+      setSaveStatus('idle');
+      setSaveMessage('');
+      setFormNear(true);
+      leadBoxRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => leadBoxRef.current?.querySelector<HTMLInputElement>('input[aria-label="Your name"]')?.focus({ preventScroll: true }), 350);
+      return;
+    }
     track('report_printed');
     window.print();
   };
@@ -338,7 +350,13 @@ export default function App() {
   ];
 
   return (
-    <div className="app-card">
+    <div className={`app-card${isLeadCaptured ? '' : ' report-locked'}`}>
+      {/* Printed instead of the report when the visitor has not yet saved their details (for example Ctrl+P) */}
+      <div className="print-lock-note">
+        <h1>MONIQUE REID BOOKKEEPING</h1>
+        <p>Your full MedSpa Profit Pulse report is saved after you enter your name, practice and email on the calculator page.</p>
+        <p>medspa.moniquereidbookkeeping.com</p>
+      </div>
       {/* Print-Only Professional CPA-Ready Diagnostic Header */}
       <div className="print-header-brand">
         <h1>MONIQUE REID BOOKKEEPING</h1>
@@ -642,24 +660,24 @@ export default function App() {
             <input className="hp-field" type="text" name="hp_ref" tabIndex={-1} autoComplete="off" aria-hidden="true" data-lpignore="true" data-1p-ignore="true" value={website} onChange={e => setWebsite(e.target.value)} />
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '4px', color: '#E2E8F0', cursor: 'pointer' }}>
               <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} required />
-              I agree that Monique Reid Bookkeeping may contact me by email or phone about this review and bookkeeping services. I can opt out at any time.
+              I agree that Monique Reid Bookkeeping may contact me by email or phone about my report, a free profit review and bookkeeping services. I can opt out at any time.
             </label>
             {turnstileSiteKey && formNear && <Turnstile siteKey={turnstileSiteKey} onToken={setTurnstileToken} onProblem={setTurnstileProblem} resetSignal={turnstileReset} />}
             {turnstileSiteKey && turnstileProblem && (
               <p className="save-message save-error">The verification check did not load. Some in-app browsers (including social media apps) block it. Please open this page in Safari or Chrome to send your request. You can still use the calculator and print your report here.</p>
             )}
             <button type="submit" disabled={saveStatus === 'saving'} className="cta-btn" style={{ marginTop: '4px' }}>
-              {saveStatus === 'saving' ? 'Sending...' : 'Request My Free Review'}
+              {saveStatus === 'saving' ? 'Sending...' : 'Save My Full Report'}
             </button>
           </form>
         ) : (
           <div style={{ textAlign: 'center' }}>
-            <p style={{ color: '#34D399', fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>✓ Review request received</p>
+            <p style={{ color: '#34D399', fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>✓ Details received. Your full report is unlocked.</p>
             <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '12px' }}>
-              You already sent a request from this browser. Need to send another one with new numbers?
+              Your details are saved from this browser, so your full report is unlocked. Need to send a new request with different numbers?
             </p>
             <button type="button" className="cta-btn" onClick={() => { setSaveStatus('idle'); setSaveMessage(''); setIsEditingContact(true); }} style={{ marginTop: 0 }}>
-              Send Another Request
+              Send a New Request
             </button>
           </div>
         )}
@@ -667,7 +685,7 @@ export default function App() {
         {saveMessage && (
           <p role={saveStatus === 'error' ? 'alert' : 'status'} className={`save-message save-${saveStatus}`}>{saveMessage}</p>
         )}
-        <button type="button" className="secondary-cta-btn print-report-btn" onClick={handlePrint} style={{ marginTop: '12px' }}>Print / Save Report (free, no sign-up)</button>
+        <button type="button" className="secondary-cta-btn print-report-btn" onClick={handlePrint} style={{ marginTop: '12px' }}>{isLeadCaptured ? 'Print / Save My Full Report' : 'Save My Full Report (enter your details above)'}</button>
       </div>
 
       <a href={withUtm(BOOKING_URL, 'results_cta')} onClick={() => track('cta_clicked')} target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
