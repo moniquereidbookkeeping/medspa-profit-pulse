@@ -1,3 +1,5 @@
+import { calculateInsights } from '../../src/calc';
+
 interface Env {
   APPS_SCRIPT_URL: string;
   REPORT_SHARED_SECRET: string;
@@ -114,6 +116,12 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     if (!['injectables', 'lasers', 'facials'].includes(data.category) || !ALLOWED_PLATFORMS.includes(platform) || !['single', 'package'].includes(data.treatmentType)) return fail(400, 'Invalid selection');
     if (data.price < 0 || data.wholesaleCost < 0 || data.hourlyOverhead < 0 || data.feeRatePct < 0 || data.feeRatePct > 30 || !Number.isInteger(data.sessions) || data.sessions < 1 || data.sessions > 24 || data.wasteCushionPct < 0 || data.wasteCushionPct > 50 || data.commissionPct < 0 || data.commissionPct > 100) return fail(400, 'Numeric value outside allowed range');
     if (data.treatmentType === 'single' && data.sessions !== 1) return fail(400, 'Single-visit reports must have exactly one session');
+    // Optional "scale it up" inputs (older pages do not send them). When present they must be sensible numbers.
+    const optional: Record<string, [number, number, boolean]> = { treatmentsPerMonth: [0, 5000, true], treatmentMinutes: [0, 600, false], targetMarginPct: [0, 90, false] };
+    for (const [k, [lo, hi, whole]] of Object.entries(optional)) {
+      if (data[k] === undefined) continue;
+      if (typeof data[k] !== 'number' || !Number.isFinite(data[k]) || data[k] < lo || data[k] > hi || (whole && !Number.isInteger(data[k]))) return fail(400, 'Numeric value outside allowed range');
+    }
     if (typeof data.reportId !== 'string' || !UUID_RE.test(data.reportId)) return fail(400, 'Invalid report ID');
     const id: string = data.reportId;
 
@@ -161,7 +169,20 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     // column (with the time consent was given). Once those columns exist, the Apps Script can read `email`,
     // `paymentPlatform` and `consentAt` directly.
     const consentAt = new Date().toISOString();
-    const note = clean(`Email: ${email} | Platform: ${platform} | Consent: ${consentAt} | Feedback: ${feedback || '(none)'}`).slice(0, 900);
+    // Volume and target price are recomputed here too, so the sheet shows what the lead's yearly numbers look like.
+    let scale = '';
+    if (typeof data.treatmentsPerMonth === 'number') {
+      const ins = calculateInsights(
+        { price: data.price, wholesaleCost: data.wholesaleCost, hourlyOverhead: data.hourlyOverhead, feeRatePct: data.feeRatePct, sessions, treatmentType: data.treatmentType, wasteCushionPct: data.wasteCushionPct, commissionPct: data.commissionPct },
+        { treatmentsPerMonth: data.treatmentsPerMonth, treatmentMinutes: typeof data.treatmentMinutes === 'number' ? data.treatmentMinutes : 0, targetPct: typeof data.targetMarginPct === 'number' ? data.targetMarginPct : 40, unitsPerVisit: 0 }
+      );
+      const parts = [`Volume: ${data.treatmentsPerMonth}/mo`];
+      if (ins.yearlyContribution !== null) parts.push(`Yearly contribution: $${Math.round(ins.yearlyContribution)}`);
+      if (ins.targetPrice !== null) parts.push(`Price for ${data.targetMarginPct}%: $${ins.targetPrice}`);
+      if (ins.extraYearlyCash !== null) parts.push(`Extra per year: $${Math.round(ins.extraYearlyCash)}`);
+      scale = ` | ${parts.join(' | ')}`;
+    }
+    const note = clean(`Email: ${email} | Platform: ${platform} | Consent: ${consentAt}${scale} | Feedback: ${feedback || '(none)'}`).slice(0, 900);
 
     const safe = {
       sessions, price: data.price, wholesaleCost: data.wholesaleCost, wasteCushionPct: data.wasteCushionPct,

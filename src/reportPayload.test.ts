@@ -22,7 +22,8 @@ test('the exact payload the page builds is accepted by the real server code', as
       reportId: newReportId(), ownerName: '  Dr. Test ', practiceName: 'Glow Spa', email: ' Owner@Glow.com ', phone: '', feedback: '',
       contactConsent: true, hpRef: '', turnstileToken: '', category: 'lasers',
       paymentPlatform: 'CareCredit Standard Doctor Fee Program', treatmentType: 'package', sessions: 4,
-      price: 2400, wholesaleCost: 150, wasteCushionPct: 10, feeRatePct: 5.9, hourlyOverhead: 120, commissionPct: 25
+      price: 2400, wholesaleCost: 150, wasteCushionPct: 10, feeRatePct: 5.9, hourlyOverhead: 120, commissionPct: 25,
+      treatmentsPerMonth: 12, treatmentMinutes: 45, targetMarginPct: 40
     });
     const res = await onRequestPost({
       request: new Request('https://site.test/api/report', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://site.test' }, body: JSON.stringify(payload) }),
@@ -32,6 +33,7 @@ test('the exact payload the page builds is accepted by the real server code', as
     assert.equal(forwarded.email, 'owner@glow.com');
     assert.equal(forwarded.ownerName, 'Dr. Test');
     assert.equal(forwarded.treatmentType, 'package');
+    assert.match(forwarded.feedback, /Volume: 12\/mo \| Yearly contribution: \$\d+/);
     assert.equal(forwarded.contribution, Math.round((2400 - (141.6 + 660 + 600 + 480)) * 100) / 100); // 518.40, rounded to cents
   } finally {
     globalThis.fetch = realFetch;
@@ -42,7 +44,8 @@ test('the page never sends calculator totals for the server to trust', () => {
   const p: any = buildReportPayload({
     reportId: newReportId(), ownerName: 'a', practiceName: 'b', email: 'c@d.co', phone: '', feedback: '', contactConsent: true,
     hpRef: '', turnstileToken: '', category: 'facials', paymentPlatform: 'Regular Card Processing (Stripe, Vagaro, Square)',
-    treatmentType: 'single', sessions: 1, price: 1, wholesaleCost: 1, wasteCushionPct: 1, feeRatePct: 1, hourlyOverhead: 1, commissionPct: 1
+    treatmentType: 'single', sessions: 1, price: 1, wholesaleCost: 1, wasteCushionPct: 1, feeRatePct: 1, hourlyOverhead: 1, commissionPct: 1,
+    treatmentsPerMonth: 1, treatmentMinutes: 1, targetMarginPct: 1
   });
   for (const k of ['contribution', 'margin', 'totalOutflows', 'hiddenPlatformFees', 'providerPayrollCut', 'totalCostOfMaterials', 'roomOperationalExpense']) assert.ok(!(k in p), k);
 });

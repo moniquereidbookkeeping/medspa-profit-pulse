@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateProfitPulseMetrics, PLATFORM_DEFAULT_FEES, ALERT_COLORS } from './calc.ts';
+import { calculateProfitPulseMetrics, calculateInsights, PLATFORM_DEFAULT_FEES, ALERT_COLORS } from './calc.ts';
 
 test('calculates single-visit injectables and current low-contribution warning', () => {
   const result = calculateProfitPulseMetrics({
@@ -144,4 +144,54 @@ test('a zero price never shows a green assessment; it asks for a price instead',
   const r = calculateProfitPulseMetrics({ price: 0, wholesaleCost: 50, hourlyOverhead: 0, feeRatePct: 0, sessions: 1, treatmentType: 'single', wasteCushionPct: 0, commissionPct: 0 });
   assert.ok(r.yourRealTakeawayCash < 0);
   assert.equal(r.alertLevel, 'amber', 'asks for a price instead of calling it strong');
+});
+
+const facial = { price: 250, wholesaleCost: 35, hourlyOverhead: 45, feeRatePct: 13.5, sessions: 1, treatmentType: 'single' as const, wasteCushionPct: 20, commissionPct: 40 };
+const scale = { treatmentsPerMonth: 20, treatmentMinutes: 60, targetPct: 40, unitsPerVisit: 0 };
+
+test('yearly contribution = contribution per treatment x monthly volume x 12', () => {
+  const r = calculateInsights(facial, scale);
+  assert.equal(r.yearlyContribution, 29.25 * 20 * 12);
+  assert.equal(calculateInsights(facial, { ...scale, treatmentsPerMonth: 0 }).yearlyContribution, null);
+});
+
+test('price check finds the lowest whole-dollar price that reaches the target, and the gain per year', () => {
+  const r = calculateInsights(facial, scale);
+  assert.equal(r.priceCheck, 'raise');
+  assert.equal(r.targetPrice, 1339);
+  const at = calculateProfitPulseMetrics({ ...facial, price: r.targetPrice! });
+  const below = calculateProfitPulseMetrics({ ...facial, price: r.targetPrice! - 1 });
+  // Compare exact (unrounded-percentage) ratios: the displayed % is rounded to one decimal.
+  assert.ok(at.yourRealTakeawayCash / (r.targetPrice!) >= 0.4);
+  assert.ok(below.yourRealTakeawayCash / (r.targetPrice! - 1) < 0.4, 'one dollar less would miss the target');
+  assert.equal(r.extraYearlyCash, Math.round((at.yourRealTakeawayCash - 29.25) * 240 * 100) / 100);
+});
+
+test('price check says "meets" when already at target and "impossible" when fees + commission eat the target', () => {
+  assert.equal(calculateInsights({ ...facial, price: 5000 }, scale).priceCheck, 'meets');
+  assert.equal(calculateInsights({ ...facial, feeRatePct: 30, commissionPct: 50 }, scale).priceCheck, 'impossible');
+  assert.equal(calculateInsights({ ...facial, price: 0 }, scale).priceCheck, 'none');
+  assert.equal(calculateInsights(facial, { ...scale, targetPct: 0 }).priceCheck, 'meets');
+});
+
+test('package mode: price is the whole package, volume is packages per month, hour uses per-visit contribution', () => {
+  const pkg = { ...facial, treatmentType: 'package' as const, sessions: 4, price: 1000 };
+  const m = calculateProfitPulseMetrics(pkg);
+  const r = calculateInsights(pkg, scale);
+  assert.equal(r.yearlyContribution, Math.round(m.yourRealTakeawayCash * 240 * 100) / 100);
+  assert.equal(r.contributionPerHour, Math.round(m.takeawayPerVisit * 100) / 100); // 60-minute visits
+  assert.equal(calculateInsights(pkg, { ...scale, treatmentMinutes: 0 }).contributionPerHour, null);
+});
+
+test('per-unit view splits one visit across the units used', () => {
+  const inj = { price: 600, wholesaleCost: 200, hourlyOverhead: 50, feeRatePct: 3, sessions: 1, treatmentType: 'single' as const, wasteCushionPct: 10, commissionPct: 30 };
+  const m = calculateProfitPulseMetrics(inj);
+  const r = calculateInsights(inj, { ...scale, unitsPerVisit: 40 });
+  assert.deepEqual(r.perUnit, { price: 15, cost: 5.5, contribution: Math.round(m.takeawayPerVisit / 40 * 100) / 100 });
+  assert.equal(calculateInsights(inj, scale).perUnit, null);
+});
+
+test('insights never produce NaN or Infinity from bad input', () => {
+  const r = calculateInsights({ ...facial, price: NaN as any }, { treatmentsPerMonth: NaN as any, treatmentMinutes: -5, targetPct: 500, unitsPerVisit: -1 });
+  for (const v of [r.yearlyContribution, r.contributionPerHour, r.targetPrice, r.extraYearlyCash]) assert.ok(v === null || Number.isFinite(v));
 });

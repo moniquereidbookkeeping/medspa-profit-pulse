@@ -21,6 +21,9 @@ export interface ReportPayloadInput {
   feeRatePct: number;
   hourlyOverhead: number;
   commissionPct: number;
+  treatmentsPerMonth: number;
+  treatmentMinutes: number;
+  targetMarginPct: number;
 }
 
 export function buildReportPayload(i: ReportPayloadInput) {
@@ -44,6 +47,9 @@ export function buildReportPayload(i: ReportPayloadInput) {
     feeRatePct: i.feeRatePct,
     hourlyOverhead: i.hourlyOverhead,
     commissionPct: i.commissionPct,
+    treatmentsPerMonth: i.treatmentsPerMonth,
+    treatmentMinutes: i.treatmentMinutes,
+    targetMarginPct: i.targetMarginPct,
     source: 'MedSpa Profit Pulse'
   };
 }

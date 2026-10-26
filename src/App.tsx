@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { calculateProfitPulseMetrics, ALERT_COLORS, ALERT_THRESHOLD_NOTE, CATEGORY_DEFAULTS, PLATFORM_DEFAULT_FEES, PaymentPlatform } from './calc';
+import { calculateProfitPulseMetrics, calculateInsights, ALERT_COLORS, ALERT_THRESHOLD_NOTE, CATEGORY_DEFAULTS, CATEGORY_MINUTES, SCALE_DEFAULTS, SCALE_LIMITS, PLATFORM_DEFAULT_FEES, PaymentPlatform } from './calc';
 import NumField from './NumField';
 import Turnstile from './Turnstile';
 import { track } from './analytics';
@@ -19,7 +19,12 @@ const SITE_URL = 'https://www.moniquereidbookkeeping.com/';
 const BOOKING_URL = SITE_URL;
 /** Optional: link to your privacy policy. Leave empty to hide the link. */
 const PRIVACY_URL = '/privacy.html';
-const REVIEW_HEADLINE = 'Want a second set of eyes on this?';
+/** The offer changes with the result, so the message always matches what the visitor just saw. */
+const REVIEW_HEADLINES = {
+  red: 'Cash may be leaking out of this treatment. Want help finding where?',
+  amber: 'You are close. Want a quick look at what to tighten?',
+  green: 'Strong numbers. Want a second set of eyes on the rest of your menu?'
+} as const;
 const REVIEW_TEXT = 'Send this result to Monique for a free 15-minute treatment profit review. No obligation.';
 // --------------------------------------------------------------------------------------------
 
@@ -57,6 +62,10 @@ export default function App() {
   const [hourlyOverhead, setHourlyOverhead] = useState<number>(CATEGORY_DEFAULTS.injectables.hourlyOverhead);
   const [wasteCushionPct, setWasteCushionPct] = useState<number>(10);
   const [commissionPct, setCommissionPct] = useState<number>(30);
+  const [treatmentsPerMonth, setTreatmentsPerMonth] = useState<number>(SCALE_DEFAULTS.treatmentsPerMonth);
+  const [treatmentMinutes, setTreatmentMinutes] = useState<number>(CATEGORY_MINUTES.injectables);
+  const [targetPct, setTargetPct] = useState<number>(SCALE_DEFAULTS.targetPct);
+  const [unitsPerVisit, setUnitsPerVisit] = useState<number>(SCALE_DEFAULTS.unitsPerVisit);
 
   const [ownerName, setOwnerName] = useState("");
   const [practiceName, setPracticeName] = useState("");
@@ -108,6 +117,10 @@ export default function App() {
         setHourlyOverhead(clampNum(parsed.hourlyOverhead, 0, 100000000, CATEGORY_DEFAULTS.injectables.hourlyOverhead));
         setWasteCushionPct(clampNum(parsed.wasteCushionPct, 0, 50, 10));
         setCommissionPct(clampNum(parsed.commissionPct, 0, 100, 30));
+        setTreatmentsPerMonth(Math.round(clampNum(parsed.treatmentsPerMonth, SCALE_LIMITS.treatmentsPerMonth.min, SCALE_LIMITS.treatmentsPerMonth.max, SCALE_DEFAULTS.treatmentsPerMonth)));
+        setTreatmentMinutes(clampNum(parsed.treatmentMinutes, SCALE_LIMITS.treatmentMinutes.min, SCALE_LIMITS.treatmentMinutes.max, CATEGORY_MINUTES[(CATEGORIES as readonly string[]).includes(parsed.category) ? parsed.category as keyof typeof CATEGORY_MINUTES : 'injectables']));
+        setTargetPct(clampNum(parsed.targetPct, SCALE_LIMITS.targetPct.min, SCALE_LIMITS.targetPct.max, SCALE_DEFAULTS.targetPct));
+        setUnitsPerVisit(clampNum(parsed.unitsPerVisit, SCALE_LIMITS.unitsPerVisit.min, SCALE_LIMITS.unitsPerVisit.max, 0));
       }
       const captured = localStorage.getItem(LEAD_CAPTURED_KEY);
       if (captured === 'true') {
@@ -139,24 +152,18 @@ export default function App() {
     try {
       const stateToSave = {
         category, paymentPlatform, feeRatePct, treatmentType, sessions,
-        price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct
+        price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct,
+        treatmentsPerMonth, treatmentMinutes, targetPct, unitsPerVisit
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch (e) {
       console.warn("Could not save state", e);
     }
-  }, [category, paymentPlatform, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct]);
+  }, [category, paymentPlatform, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct, treatmentsPerMonth, treatmentMinutes, targetPct, unitsPerVisit]);
 
-  const metrics = calculateProfitPulseMetrics({
-    price,
-    wholesaleCost,
-    hourlyOverhead,
-    feeRatePct,
-    sessions,
-    treatmentType,
-    wasteCushionPct,
-    commissionPct
-  });
+  const calcInputs = { price, wholesaleCost, hourlyOverhead, feeRatePct, sessions, treatmentType, wasteCushionPct, commissionPct };
+  const metrics = calculateProfitPulseMetrics(calcInputs);
+  const insights = calculateInsights(calcInputs, { treatmentsPerMonth, treatmentMinutes, targetPct, unitsPerVisit: category === 'injectables' ? unitsPerVisit : 0 });
 
   // One color for the dollar figure, the percentage, and the banner.
   const toneColor = ALERT_COLORS[metrics.alertLevel];
@@ -168,6 +175,7 @@ export default function App() {
     setPrice(defaults.price * (treatmentType === 'package' ? sessions : 1));
     setWholesaleCost(defaults.wholesaleCost);
     setHourlyOverhead(defaults.hourlyOverhead);
+    setTreatmentMinutes(CATEGORY_MINUTES[cat]);
   };
 
   const handlePlatformChange = (platform: PaymentPlatform) => {
@@ -206,6 +214,10 @@ export default function App() {
     setHourlyOverhead(CATEGORY_DEFAULTS.injectables.hourlyOverhead);
     setWasteCushionPct(10);
     setCommissionPct(30);
+    setTreatmentsPerMonth(SCALE_DEFAULTS.treatmentsPerMonth);
+    setTreatmentMinutes(CATEGORY_MINUTES.injectables);
+    setTargetPct(SCALE_DEFAULTS.targetPct);
+    setUnitsPerVisit(SCALE_DEFAULTS.unitsPerVisit);
     pendingReportId.current = null;
     setPhone("");
     setEmail("");
@@ -264,7 +276,8 @@ export default function App() {
           body: JSON.stringify(buildReportPayload({
             reportId, ownerName, practiceName, email, phone, feedback, contactConsent,
             hpRef: website, turnstileToken, category, paymentPlatform, treatmentType, sessions,
-            price, wholesaleCost, wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct
+            price, wholesaleCost, wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct,
+            treatmentsPerMonth, treatmentMinutes, targetMarginPct: targetPct
           }))
         });
       } catch {
@@ -313,6 +326,10 @@ export default function App() {
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
   };
+
+  const formatWhole = (val: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
+  const per = treatmentType === 'package' ? 'package' : 'treatment';
 
   const tabs: { id: 'injectables' | 'lasers' | 'facials'; label: string }[] = [
     { id: 'injectables', label: 'Injectables' },
@@ -385,6 +402,7 @@ export default function App() {
         </span>
       </div>
 
+      <div className="print-grid">
       {/* Fee Rate Input */}
       <div className="input-group">
         <label className="label-text" htmlFor="fee-rate">Effective Platform Fee Rate (%)</label>
@@ -445,6 +463,9 @@ export default function App() {
         </div>
       </div>
 
+      </div>
+
+      <div className="print-grid">
       {/* Sliders with Manual Number Inputs */}
       <div className="input-group">
         <div className="slider-header">
@@ -482,6 +503,33 @@ export default function App() {
           </div>
         </div>
         <input type="range" aria-label="Provider commission percent" min="0" max="50" step="5" value={commissionPct} onChange={(e) => { engage(); setCommissionPct(parseFloat(e.target.value) || 0); }} />
+      </div>
+
+      </div>
+
+      {/* Scale it up: turns one treatment into a yearly number and a price target */}
+      <div className="scale-group">
+        <p className="scale-title">Scale it up <span className="label-sub" style={{ marginLeft: 6 }}>optional</span></p>
+        <div className="input-group">
+          <label className="label-text" htmlFor="per-month">How many {per === 'package' ? 'packages' : 'of these'} do you sell per month?</label>
+          <NumField id="per-month" className="manual-input" value={treatmentsPerMonth} min={SCALE_LIMITS.treatmentsPerMonth.min} max={SCALE_LIMITS.treatmentsPerMonth.max} step={1} integer onChange={used(setTreatmentsPerMonth)} />
+        </div>
+        <div className="input-group">
+          <label className="label-text" htmlFor="minutes">Treatment time per visit (minutes)</label>
+          <NumField id="minutes" className="manual-input" value={treatmentMinutes} min={SCALE_LIMITS.treatmentMinutes.min} max={SCALE_LIMITS.treatmentMinutes.max} step={5} onChange={used(setTreatmentMinutes)} />
+          <span className="label-sub" style={{ textAlign: 'left', display: 'block', marginTop: 4, color: '#94A3B8' }}>Placeholder time. Replace it with how long this really takes your provider.</span>
+        </div>
+        <div className="input-group">
+          <label className="label-text" htmlFor="target-pct">Contribution percentage you want to reach (%)</label>
+          <NumField id="target-pct" className="manual-input" value={targetPct} min={SCALE_LIMITS.targetPct.min} max={SCALE_LIMITS.targetPct.max} step={1} onChange={used(setTargetPct)} />
+        </div>
+        {category === 'injectables' && (
+          <div className="input-group">
+            <label className="label-text" htmlFor="units">Units used per visit (Botox, filler and similar)</label>
+            <NumField id="units" className="manual-input" value={unitsPerVisit} min={SCALE_LIMITS.unitsPerVisit.min} max={SCALE_LIMITS.unitsPerVisit.max} step={1} onChange={used(setUnitsPerVisit)} />
+            <span className="label-sub" style={{ textAlign: 'left', display: 'block', marginTop: 4, color: '#94A3B8' }}>Leave at 0 to skip the per-unit view.</span>
+          </div>
+        )}
       </div>
 
       <hr className="divider" />
@@ -528,6 +576,44 @@ export default function App() {
         )}
       </div>
 
+      {/* Yearly impact, price check, hourly view, per-unit view */}
+      <div className="results-panel insights-panel" aria-label="Yearly impact and price check">
+        {insights.yearlyContribution !== null ? (
+          <div className="result-row">
+            <span>Estimated yearly contribution ({treatmentsPerMonth} {per === 'package' ? 'packages' : 'treatments'} a month)</span>
+            <span style={{ color: toneColor }}>{formatWhole(insights.yearlyContribution)}</span>
+          </div>
+        ) : (
+          <div className="result-row"><span>Enter how many you sell per month to see your yearly number.</span><span /></div>
+        )}
+        {insights.contributionPerHour !== null && (
+          <div className="result-row">
+            <span>Estimated contribution per treatment hour ({treatmentMinutes} min per visit)</span>
+            <span>{formatCurrency(insights.contributionPerHour)}</span>
+          </div>
+        )}
+        {insights.perUnit && (
+          <div className="result-row">
+            <span>Per unit: client pays {formatCurrency(insights.perUnit.price)}, product costs {formatCurrency(insights.perUnit.cost)}, you keep</span>
+            <span>{formatCurrency(insights.perUnit.contribution)}</span>
+          </div>
+        )}
+        {insights.priceCheck === 'raise' && insights.targetPrice !== null && (
+          <p className="price-check">
+            <strong>Price check:</strong> to reach {targetPct}% contribution, this {per} would need to be about <strong>{formatCurrency(insights.targetPrice)}</strong>
+            {insights.priceIncreasePct !== null && <> ({insights.priceIncreasePct}% more than today)</>}.
+            {insights.extraYearlyCash !== null && <> If your volume held steady, that is roughly <strong>{formatWhole(insights.extraYearlyCash)} more a year</strong>.</>}
+          </p>
+        )}
+        {insights.priceCheck === 'meets' && (
+          <p className="price-check"><strong>Price check:</strong> this {per} already reaches your {targetPct}% target.</p>
+        )}
+        {insights.priceCheck === 'impossible' && (
+          <p className="price-check"><strong>Price check:</strong> platform fees and provider commission alone take {insights.feePlusCommissionPct}% of the price, so a {targetPct}% target cannot be reached by price alone. Look at the fee rate or the commission first.</p>
+        )}
+        <p className="threshold-note" style={{ marginTop: 6 }}>Yearly figures assume the same price, costs and volume every month. They are estimates for planning, not forecasts.</p>
+      </div>
+
       {/* Dynamic Accessible Contribution Alert Banner */}
       <div className={`alert-box alert-${metrics.alertLevel}`} role="status" style={{ display: 'block', marginTop: '16px' }}>
         <strong>{metrics.alertLevel === 'red' ? '🚨 Profitability Concern: ' : metrics.alertLevel === 'amber' ? '🟡 Margin Squeeze: ' : '🟢 Strong Contribution: '}</strong>
@@ -545,7 +631,7 @@ export default function App() {
       <div className="lead-box" ref={leadBoxRef} onFocus={() => setFormNear(true)}>
         {(!isLeadCaptured || isEditingContact) ? (
           <form onSubmit={handleLeadSubmit}>
-            <p className="lead-headline">{REVIEW_HEADLINE}</p>
+            <p className="lead-headline">{REVIEW_HEADLINES[metrics.alertLevel]}</p>
             <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>{REVIEW_TEXT}</p>
             <input className="manual-input" value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Your name (required)" aria-label="Your name" autoComplete="name" required maxLength={100} />
             <input className="manual-input" value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice name (required)" aria-label="Practice name" autoComplete="organization" required maxLength={120} />
@@ -588,7 +674,7 @@ export default function App() {
         See How Monique Helps MedSpas
       </a>
 
-      <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
+      <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Yearly figures assume the same price, costs and monthly volume all year. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
 
       <p className="privacy-note">
         Your calculator entries are saved only in this browser. If you request a review, your contact details and the numbers you entered are sent to Monique Reid Bookkeeping so she can follow up. A Cloudflare security check may run before you submit, and anonymous page-visit counts may be collected to improve this tool.

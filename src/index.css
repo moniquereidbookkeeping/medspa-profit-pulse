@@ -564,3 +564,25 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* Scale it up + yearly impact */
+.scale-group { margin-top: 22px; padding-top: 4px; border-top: 1px dashed rgba(212, 175, 55, 0.3); }
+.scale-title { margin: 14px 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #F5E6C4; display: flex; align-items: baseline; }
+.insights-panel { margin-top: 12px; }
+.price-check { margin: 4px 0 6px; font-size: 13px; line-height: 1.6; color: #E2E8F0; }
+.price-check strong { color: #F5E6C4; }
+@media print {
+  .scale-group { display: none !important; }
+  .insights-panel { break-inside: avoid; page-break-inside: avoid; margin-top: 8px !important; }
+  .price-check { color: #000 !important; font-size: 10.5pt !important; margin: 2px 0 4px !important; }
+  .price-check strong { color: #000 !important; }
+  .print-grid { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 14px; }
+  .insights-panel .threshold-note { display: none !important; }
+  .results-panel { padding: 10px 18px !important; }
+  .result-row { margin-bottom: 3px !important; }
+  .print-assumptions { font-size: 8.5pt !important; margin-top: 8px !important; line-height: 1.4 !important; }
+  .print-signature { margin-top: 8px !important; }
+  .print-header-brand { margin-bottom: 8px !important; padding-bottom: 6px !important; }
+  .insights-panel { padding: 10px 18px !important; }
+  .insights-panel .result-row { margin-bottom: 4px !important; }
+}

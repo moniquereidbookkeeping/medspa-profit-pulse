@@ -237,3 +237,19 @@ test('every response from the report server carries the nosniff header and is ne
   assert.equal(res.headers.get('X-Content-Type-Options'), 'nosniff');
   assert.equal(res.headers.get('Cache-Control'), 'no-store');
 });
+
+test('older pages without the new scale fields still save, and new fields are range-checked', async () => {
+  const calls = mockUpstream();
+  assert.equal((await post(payload())).status, 200, 'no scale fields');
+  assert.ok(!/Volume:/.test(calls[0].feedback));
+  assert.equal((await post(payload({ treatmentsPerMonth: 20, treatmentMinutes: 30, targetMarginPct: 40 }))).status, 200);
+  assert.match(calls[1].feedback, /Volume: 20\/mo/);
+  assert.match(calls[1].feedback, /Price for 40%: \$1339/, 'target price is recomputed on the server');
+  assert.equal((await post(payload({ treatmentsPerMonth: -1 }))).status, 400);
+  assert.equal((await post(payload({ treatmentsPerMonth: 5001 }))).status, 400);
+  assert.equal((await post(payload({ treatmentsPerMonth: 2.5 }))).status, 400);
+  assert.equal((await post(payload({ treatmentMinutes: 601 }))).status, 400);
+  assert.equal((await post(payload({ targetMarginPct: 91 }))).status, 400);
+  assert.equal((await post(payload({ treatmentsPerMonth: '20' }))).status, 400);
+  assert.equal(calls.length, 2);
+});

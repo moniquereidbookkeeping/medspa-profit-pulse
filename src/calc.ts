@@ -118,3 +118,107 @@ export function calculateProfitPulseMetrics(i: ProfitPulseInputs): ProfitPulseOu
     alertMessage
   };
 }
+
+// ---- "Scale it up" helpers: yearly impact, price check, contribution per hour, per-unit view ----
+
+export interface ScaleInputs {
+  /** Treatments (or packages, in package mode) sold per month. 0 hides the yearly figures. */
+  treatmentsPerMonth: number;
+  /** Minutes of treatment time per visit. 0 hides the per-hour figure. */
+  treatmentMinutes: number;
+  /** Contribution percentage the owner wants to reach. */
+  targetPct: number;
+  /** Optional injectable units used per visit. 0 hides the per-unit view. */
+  unitsPerVisit: number;
+}
+
+export const SCALE_LIMITS = {
+  treatmentsPerMonth: { min: 0, max: 5000 },
+  treatmentMinutes: { min: 0, max: 600 },
+  targetPct: { min: 0, max: 90 },
+  unitsPerVisit: { min: 0, max: 1000 }
+} as const;
+
+export const SCALE_DEFAULTS = { treatmentsPerMonth: 20, targetPct: 40, unitsPerVisit: 0 } as const;
+/** Placeholder treatment times (minutes per visit) the owner is expected to replace. */
+export const CATEGORY_MINUTES = { injectables: 30, lasers: 45, facials: 60 } as const;
+
+export interface ProfitPulseInsights {
+  /** Yearly contribution at the entered monthly volume (null when volume is 0). */
+  yearlyContribution: number | null;
+  /** Contribution per hour of treatment time (null when minutes is 0). */
+  contributionPerHour: number | null;
+  /** 'meets' = already at or above target; 'raise' = price needed; 'impossible' = fees + commission alone exceed the target. */
+  priceCheck: 'none' | 'meets' | 'raise' | 'impossible';
+  targetPrice: number | null;
+  priceIncreasePct: number | null;
+  /** Extra yearly cash if the price were raised to targetPrice at the same volume (null when volume is 0). */
+  extraYearlyCash: number | null;
+  feePlusCommissionPct: number;
+  perUnit: { price: number; cost: number; contribution: number } | null;
+}
+
+const clampScale = (v: unknown, lim: { min: number; max: number }) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(lim.max, Math.max(lim.min, n)) : lim.min;
+};
+
+export function calculateInsights(i: ProfitPulseInputs, s: ScaleInputs): ProfitPulseInsights {
+  const m = calculateProfitPulseMetrics(i);
+  const perMonth = Math.round(clampScale(s.treatmentsPerMonth, SCALE_LIMITS.treatmentsPerMonth));
+  const minutes = clampScale(s.treatmentMinutes, SCALE_LIMITS.treatmentMinutes);
+  const target = clampScale(s.targetPct, SCALE_LIMITS.targetPct);
+  const units = clampScale(s.unitsPerVisit, SCALE_LIMITS.unitsPerVisit);
+  const price = Math.max(0, Number(i.price) || 0);
+  const fee = Math.max(0, Number(i.feeRatePct) || 0);
+  const commission = Math.max(0, Number(i.commissionPct) || 0);
+  const sessions = i.treatmentType === 'single' ? 1 : Math.max(1, Math.round(Number(i.sessions) || 1));
+  const yearlyFactor = perMonth * 12;
+
+  const yearlyContribution = perMonth > 0 ? money(m.yourRealTakeawayCash * yearlyFactor) : null;
+  const contributionPerHour = minutes > 0 ? money(m.takeawayPerVisit / (minutes / 60)) : null;
+
+  let priceCheck: ProfitPulseInsights['priceCheck'] = 'none';
+  let targetPrice: number | null = null;
+  let priceIncreasePct: number | null = null;
+  let extraYearlyCash: number | null = null;
+  const feePlusCommissionPct = pct(fee + commission);
+
+  if (price > 0) {
+    if (m.yourRealKeepPercentagePct >= target) {
+      priceCheck = 'meets';
+    } else {
+      const share = 1 - fee / 100 - commission / 100 - target / 100;
+      if (share <= 0) {
+        priceCheck = 'impossible';
+      } else {
+        const fixed = m.totalCostOfMaterials + m.roomOperationalExpense;
+        let p = Math.ceil(fixed / share - 1e-9);
+        // Guard against rounding: make sure the rounded price really reaches the target.
+        let guard = 0;
+        while (guard++ < 5 && calculateProfitPulseMetrics({ ...i, price: p }).yourRealKeepPercentagePct < target) p += 1;
+        if (p <= price) {
+          priceCheck = 'meets';
+        } else {
+          priceCheck = 'raise';
+          targetPrice = p;
+          priceIncreasePct = pct(100 * (p - price) / price);
+          if (perMonth > 0) {
+            const gain = calculateProfitPulseMetrics({ ...i, price: p }).yourRealTakeawayCash - m.yourRealTakeawayCash;
+            extraYearlyCash = money(gain * yearlyFactor);
+          }
+        }
+      }
+    }
+  }
+
+  const perUnit = units > 0
+    ? {
+        price: money(price / sessions / units),
+        cost: money((Math.max(0, Number(i.wholesaleCost) || 0) * (1 + Math.max(0, Number(i.wasteCushionPct) || 0) / 100)) / units),
+        contribution: money(m.takeawayPerVisit / units)
+      }
+    : null;
+
+  return { yearlyContribution, contributionPerHour, priceCheck, targetPrice, priceIncreasePct, extraYearlyCash, feePlusCommissionPct, perUnit };
+}
