@@ -35,11 +35,23 @@ Only contact rows where `contactConsent` is `true` (the server now requires it f
 
 | Feature | Settings | Notes |
 | --- | --- | --- |
-| Bot protection (Cloudflare Turnstile, free) | `VITE_TURNSTILE_SITE_KEY` (build variable) **and** `TURNSTILE_SECRET_KEY` (secret) | Set both. `/api/report` health check shows `botProtection: enabled`. |
+| Bot protection (Cloudflare Turnstile, free) | `TURNSTILE_SITE_KEY` (public key) **and** `TURNSTILE_SECRET_KEY` (secret), both as runtime variables | Set both, no rebuild needed. The page asks `/api/config`, so it shows the check only when the server enforces it. If only one key is set, protection stays off and `/api/report` shows a warning. |
 | Funnel analytics (Plausible) | `VITE_PLAUSIBLE_DOMAIN` (build variable) | Events: `calculator_used`, `review_requested`, `review_request_failed`, `report_printed`, `cta_clicked`. No personal data is sent. |
 | Page-view analytics | Turn on **Web Analytics** for the project in the Cloudflare dashboard | No code needed. |
 
 Build variables need a redeploy to take effect.
+
+## Security and speed (what is already set up)
+
+- `public/_headers` sets the security headers and the caching rules. It controls which outside services the page may load, and it applies only to the web page, not to `/api/*`.
+  **If you add a service, edit it or the browser will block it:**
+  - Embedding the calculator on another website: add that site to `frame-ancestors`.
+  - Self-hosted analytics, or any other outside script: add its address to `script-src` and `connect-src`.
+  - After any edit, open the live page and check the browser console for "Content Security Policy" messages.
+- `public/privacy.html` is the privacy page linked from the calculator. Read it and change anything that is not true for your business.
+- `package-lock.json` pins exact package versions, and `.node-version` pins Node 20, so every build is the same. Dependabot opens a pull request when a dependency needs a security update. Read it, make sure the checks pass, then merge.
+- Recommended in Cloudflare (no code): **Security > WAF > Rate limiting rules**, limit `POST /api/report` to about 5 requests per minute per visitor. Turn on **Web Analytics** for page-view counts.
+- If a deployment misbehaves: Cloudflare Pages > Deployments > pick the last good one > **Rollback**.
 
 ## Easy edits (top of `src/App.tsx`)
 

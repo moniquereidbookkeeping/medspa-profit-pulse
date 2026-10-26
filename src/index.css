@@ -35,6 +35,9 @@ body {
 button, input, textarea, select { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 
+/* Loading shell: painted from index.html before the JavaScript arrives, replaced when the calculator starts */
+.shell-note { text-align: center; color: #CBD5E1; font-size: 12px; margin: 22px 0 8px; min-height: 40vh; }
+
 /* Premium Luxury Card Styling */
 .app-card {
   background: linear-gradient(180deg, #0F172A 0%, #090D16 100%);
@@ -76,7 +79,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .badge-pill {
   display: inline-flex;
   align-items: center;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.4;
   font-weight: 700;
   text-transform: uppercase;
@@ -91,10 +94,10 @@ button { -webkit-tap-highlight-color: transparent; }
   background: none;
   border: none;
   color: #CBD5E1;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border-radius: 6px;
   transition: all 0.15s ease;
   display: inline-flex;
@@ -120,7 +123,7 @@ button { -webkit-tap-highlight-color: transparent; }
   border: 1px solid transparent;
   color: #94A3B8;
   padding: 10px 4px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.35;
   font-weight: 700;
   border-radius: 10px;
@@ -143,7 +146,7 @@ button { -webkit-tap-highlight-color: transparent; }
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
   font-weight: 700;
   text-transform: uppercase;
@@ -151,7 +154,7 @@ button { -webkit-tap-highlight-color: transparent; }
   color: #E2E8F0;
   margin-bottom: 6px;
 }
-.label-sub { font-size: 10px; color: #CBD5E1; text-transform: none; letter-spacing: normal; text-align: right; font-weight: 500; }
+.label-sub { font-size: 12px; color: #CBD5E1; text-transform: none; letter-spacing: normal; text-align: right; font-weight: 500; }
 .input-row-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(68px, 1fr); gap: 8px; align-items: center; }
 
 .toggle-container {
@@ -169,7 +172,7 @@ button { -webkit-tap-highlight-color: transparent; }
   border: none;
   color: #CBD5E1;
   padding: 9px 6px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.35;
   font-weight: 600;
   border-radius: 8px;
@@ -279,8 +282,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .save-message { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: #F5E6C4; }
 .save-message.save-ok { color: #6EE7B7; }
 .save-message.save-error { color: #FCA5A5; }
-.threshold-note { margin: 8px 2px 0; font-size: 11px; line-height: 1.5; color: #94A3B8; }
-.privacy-note { margin: 18px 0 0; font-size: 11px; line-height: 1.5; color: #94A3B8; text-align: center; }
+.threshold-note { margin: 8px 2px 0; font-size: 12px; line-height: 1.5; color: #94A3B8; }
+.privacy-note { margin: 18px 0 0; font-size: 12px; line-height: 1.5; color: #94A3B8; text-align: center; }
 .privacy-note a { color: #F5E6C4; text-decoration: underline; }
 .header > p.brand-line { text-transform: none; letter-spacing: 0.04em; font-size: 12px; color: #E5C158; margin-top: 8px; font-weight: 600; }
 
@@ -325,7 +328,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 
 .footer-text { 
   color: #94A3B8; 
-  font-size: 10px; 
+  font-size: 11px; 
   line-height: 1.6; 
   text-align: center; 
   letter-spacing: 0.1em; 
@@ -339,7 +342,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 @media print {
   @page {
     size: letter;
-    margin: 0.5in;
+    margin: 0.4in;
   }
 
   body {
@@ -505,6 +508,29 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .threshold-note { color: #000 !important; font-size: 9pt !important; }
   .print-signature { margin-top: 22px !important; font-weight: 800 !important; text-align: center !important; }
   .print-report-date, .print-contact-details { text-transform: none !important; letter-spacing: normal !important; }
+  /* Platform and structure already appear in the report header */
+  .print-hide { display: none !important; }
+  /* Report polish: no dark page background on paper, no blurry shadows, and fit on one Letter page */
+  html { background: #ffffff !important; }
+  .profit-text, .margin-text { text-shadow: none !important; }
+  .results-panel { break-inside: avoid; page-break-inside: avoid; padding: 14px 18px !important; }
+  .input-group { margin-top: 3px !important; }
+  .label-text { margin-bottom: 2px !important; }
+  .manual-input { padding: 3px 10px !important; font-size: 10pt !important; min-height: 0 !important; outline: none !important; box-shadow: none !important; }
+  .slider-header > div { background: #ffffff !important; border: 1px solid #000000 !important; }
+  .slider-header > div input, .slider-header > div span { color: #000000 !important; }
+  .currency-input-wrap input { padding-left: 24px !important; }
+  .currency-input-wrap > span { left: 9px !important; color: #000000 !important; font-size: 10pt !important; }
+  .result-row { margin-bottom: 6px !important; font-size: 10.5pt !important; }
+  .result-row > span:last-child { font-size: 11pt !important; }
+  .profit-text { font-size: 20pt !important; }
+  .divider { margin: 10px 0 !important; }
+  .print-header-brand { margin-bottom: 8px !important; padding-bottom: 8px !important; }
+  .print-header-brand h1 { font-size: 18pt !important; }
+  .print-assumptions { margin-top: 8px !important; font-size: 8pt !important; line-height: 1.35 !important; }
+  .print-signature { margin-top: 8px !important; }
+  .alert-box { margin-top: 8px !important; padding: 8px 12px !important; }
+  .threshold-note { margin-top: 4px !important; }
   .alert-box {
     border: 1px solid #000000 !important;
     background: #f8fafc !important;
@@ -517,14 +543,19 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   }
 }
 
+/* iPhones zoom the page when a field with text smaller than 16px is tapped */
+@media (max-width: 767px) {
+  .manual-input, .slider-header input[type="number"], .rate-suffix-input { font-size: 16px !important; }
+}
+
 @media (max-width: 390px) {
   body { padding: 10px; }
   #root { min-height: calc(100vh - 20px); }
   .app-card { padding: 17px; border-radius: 16px; }
   .header h1 { font-size: 20px; }
-  .tab-btn { font-size: 9px; padding-left: 2px; padding-right: 2px; }
+  .tab-btn { font-size: 11px; padding-left: 2px; padding-right: 2px; }
   .input-row-split { grid-template-columns: minmax(0, 1.8fr) minmax(60px, 0.8fr); }
-  .toggle-btn { font-size: 10px; }
+  .toggle-btn { font-size: 11px; }
   .results-panel { padding: 14px; }
   .result-row { font-size: 12px; gap: 8px; }
   .profit-text { font-size: 22px; }

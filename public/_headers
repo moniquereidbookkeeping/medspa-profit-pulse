@@ -1,0 +1,18 @@
+# Cloudflare Pages response headers (applies to the web page and its files).
+# Test changes in a browser: a typo in the Content-Security-Policy blocks scripts, the bot check or analytics.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  # Only this site loads and runs scripts here. Allowed outside hosts: the Cloudflare bot check, Plausible, Cloudflare Web Analytics.
+  # frame-ancestors lets ONLY your own website embed the calculator (so nobody can overlay your form on another site).
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://plausible.io https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://challenges.cloudflare.com https://plausible.io https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'self' https://www.moniquereidbookkeeping.com https://moniquereidbookkeeping.com; base-uri 'self'; form-action 'self'; object-src 'none'
+
+# Hashed build files never change, so browsers can keep them for a year (repeat visits load instantly).
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Small images: cache for a day so a replaced preview image shows up quickly.
+/*.png
+  Cache-Control: public, max-age=86400

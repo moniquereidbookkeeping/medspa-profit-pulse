@@ -140,7 +140,7 @@ test('every alert level maps to exactly one display color (number, percent and b
   assert.equal(new Set(Object.values(ALERT_COLORS)).size, 3);
 });
 
-test('negative cash is always red, even for a price of zero', () => {
+test('a zero price never shows a green assessment; it asks for a price instead', () => {
   const r = calculateProfitPulseMetrics({ price: 0, wholesaleCost: 50, hourlyOverhead: 0, feeRatePct: 0, sessions: 1, treatmentType: 'single', wasteCushionPct: 0, commissionPct: 0 });
   assert.ok(r.yourRealTakeawayCash < 0);
   assert.equal(r.alertLevel, 'amber', 'asks for a price instead of calling it strong');

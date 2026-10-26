@@ -34,12 +34,14 @@ function loadTurnstile(): Promise<void> {
 interface Props {
   siteKey: string;
   onToken: (token: string) => void;
+  /** Called when the check could not load or errored (some in-app browsers block it). */
+  onProblem?: (problem: boolean) => void;
   /** Increase this number to ask for a fresh check (after a failed submit). */
   resetSignal: number;
 }
 
-/** Cloudflare Turnstile bot check. Only rendered when VITE_TURNSTILE_SITE_KEY is set. */
-export default function Turnstile({ siteKey, onToken, resetSignal }: Props) {
+/** Cloudflare Turnstile bot check. Only rendered when the server's /api/config says protection is on. */
+export default function Turnstile({ siteKey, onToken, onProblem, resetSignal }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | undefined>(undefined);
 
@@ -51,12 +53,12 @@ export default function Turnstile({ siteKey, onToken, resetSignal }: Props) {
         widgetId.current = window.turnstile.render(host.current, {
           sitekey: siteKey,
           theme: 'dark',
-          callback: (token: string) => onToken(token),
+          callback: (token: string) => { onProblem?.(false); onToken(token); },
           'expired-callback': () => onToken(''),
-          'error-callback': () => onToken('')
+          'error-callback': () => { onToken(''); onProblem?.(true); }
         });
       })
-      .catch(() => onToken(''));
+      .catch(() => { onToken(''); onProblem?.(true); });
     return () => {
       cancelled = true;
       if (widgetId.current && window.turnstile) window.turnstile.remove(widgetId.current);

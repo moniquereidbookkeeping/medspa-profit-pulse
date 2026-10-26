@@ -1,12 +1,13 @@
 interface Env {
   APPS_SCRIPT_URL: string;
   REPORT_SHARED_SECRET: string;
-  /** Optional. When set, every submission must pass a Cloudflare Turnstile check. */
+  /** Optional. Bot protection is on only when BOTH Turnstile keys are set (see functions/api/config.ts). */
+  TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
 }
 
 const jsonResponse = (body: object, status = 200) => new Response(JSON.stringify(body), {
-  status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
+  status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
 });
 
 const ALLOWED_PLATFORMS = [
@@ -19,15 +20,20 @@ const ALLOWED_PLATFORMS = [
 ];
 const MAX_BODY_CHARS = 12000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Control characters, zero-width characters and bidirectional overrides (which can disguise text in a sheet).
+const INVISIBLE_RE = /[\u0000-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
 
 const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const roundPct = (value: number) => Math.round((value + Number.EPSILON) * 10) / 10;
 
-/** Collapse control characters, trim, and cap the length. */
-const clean = (v: unknown, max: number) => String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, max);
+/** Replace invisible characters, trim, and collapse repeated spaces. */
+const clean = (v: string) => v.replace(INVISIBLE_RE, ' ').replace(/ {2,}/g, ' ').trim();
 
 /** Stop spreadsheet apps from treating visitor text as a formula (=, +, -, @ at the start). */
 const sheetSafe = (v: string) => (/^[=+\-@]/.test(v) ? `'${v}` : v);
+
+export const turnstileEnabled = (env: Env) => Boolean(env.TURNSTILE_SITE_KEY && env.TURNSTILE_SECRET_KEY);
 
 // Safe operational check: never return the configured URL or any secret.
 export const onRequestGet = async ({ env }: { env: Env }): Promise<Response> => {
@@ -44,9 +50,11 @@ export const onRequestGet = async ({ env }: { env: Env }): Promise<Response> => 
     if (!response.ok || upstream.status !== 'ready' || upstream.submissionsTabFound !== true) {
       return jsonResponse({ status: 'upstream_not_ready', httpStatus: response.status, message: 'Apps Script did not confirm that the Submissions tab is ready.' }, 502);
     }
+    const half = Boolean(env.TURNSTILE_SITE_KEY) !== Boolean(env.TURNSTILE_SECRET_KEY);
     return jsonResponse({
       status: 'ready',
-      botProtection: env.TURNSTILE_SECRET_KEY ? 'enabled' : 'disabled',
+      botProtection: turnstileEnabled(env) ? 'enabled' : 'disabled',
+      ...(half ? { warning: 'Only one of TURNSTILE_SITE_KEY / TURNSTILE_SECRET_KEY is set, so bot protection is OFF until both are set.' } : {}),
       message: 'Cloudflare configuration and Apps Script health check passed.'
     });
   } catch (error) {
@@ -78,6 +86,15 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
   const fail = (status: number, error: string) => jsonResponse({ saved: false, error }, status);
   try {
     if (!env.APPS_SCRIPT_URL || !env.REPORT_SHARED_SECRET) return fail(503, 'Server not configured');
+
+    // Browsers always send Origin on a cross-site or fetch POST. Refuse requests that come from another website.
+    const origin = request.headers.get('Origin');
+    if (origin) {
+      let sameSite = false;
+      try { sameSite = new URL(origin).host === new URL(request.url).host; } catch { /* malformed Origin */ }
+      if (!sameSite) return fail(403, 'Forbidden');
+    }
+
     if (!request.headers.get('content-type')?.includes('application/json')) return fail(415, 'JSON required');
     if (Number(request.headers.get('content-length') || 0) > MAX_BODY_CHARS) return fail(413, 'Request too large');
     const raw = await request.text();
@@ -87,36 +104,47 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     try { data = JSON.parse(raw); } catch { return fail(400, 'Invalid request'); }
     if (!data || typeof data !== 'object' || Array.isArray(data)) return fail(400, 'Invalid request');
 
-    // Hidden "website" field: real visitors never fill it in. Pretend success, save nothing.
-    if (typeof data.website === 'string' && data.website.trim() !== '') return jsonResponse({ saved: true, reportId: String(data.reportId || '') });
+    // Hidden spam-trap field: real visitors never fill it in. Pretend success, save nothing.
+    if (typeof data.hpRef === 'string' && data.hpRef.trim() !== '') return jsonResponse({ saved: true, reportId: String(data.reportId || '') });
 
     // ---- Calculator inputs (all totals are recomputed here; browser-sent totals are ignored) ----
     const inputNums = ['sessions', 'price', 'wholesaleCost', 'wasteCushionPct', 'feeRatePct', 'hourlyOverhead', 'commissionPct'];
     if (inputNums.some(k => typeof data[k] !== 'number' || !Number.isFinite(data[k]) || Math.abs(data[k]) > 1e8)) return fail(400, 'Invalid numeric input');
-    const platform = String(data.paymentPlatform || '');
+    const platform = typeof data.paymentPlatform === 'string' ? data.paymentPlatform : '';
     if (!['injectables', 'lasers', 'facials'].includes(data.category) || !ALLOWED_PLATFORMS.includes(platform) || !['single', 'package'].includes(data.treatmentType)) return fail(400, 'Invalid selection');
     if (data.price < 0 || data.wholesaleCost < 0 || data.hourlyOverhead < 0 || data.feeRatePct < 0 || data.feeRatePct > 30 || !Number.isInteger(data.sessions) || data.sessions < 1 || data.sessions > 24 || data.wasteCushionPct < 0 || data.wasteCushionPct > 50 || data.commissionPct < 0 || data.commissionPct > 100) return fail(400, 'Numeric value outside allowed range');
     if (data.treatmentType === 'single' && data.sessions !== 1) return fail(400, 'Single-visit reports must have exactly one session');
-    const id = String(data.reportId || '');
-    if (!/^[0-9a-f-]{36}$/i.test(id)) return fail(400, 'Invalid report ID');
+    if (typeof data.reportId !== 'string' || !UUID_RE.test(data.reportId)) return fail(400, 'Invalid report ID');
+    const id: string = data.reportId;
 
-    // ---- Contact details (a saved report is a request for a free review, so contact info is required) ----
-    const ownerName = clean(data.ownerName, 100);
-    const practiceName = clean(data.practiceName, 120);
-    const email = clean(data.email, 254).toLowerCase();
-    const phone = clean(data.phone, 25);
+    // ---- Contact details: text fields must be plain strings and are rejected, not silently cut, when too long ----
+    const field = (v: unknown, max: number): string | null => {
+      if (v === undefined || v === null) return '';
+      if (typeof v !== 'string' || v.length > max) return null;
+      return clean(v);
+    };
+    const ownerName = field(data.ownerName, 100);
+    const practiceName = field(data.practiceName, 120);
+    const emailRaw = field(data.email, 254);
+    const phone = field(data.phone, 25);
+    const feedback = field(data.feedback, 400);
+    if (ownerName === null || practiceName === null || emailRaw === null || phone === null || feedback === null) return fail(400, 'One of your entries is too long or not valid text.');
+    const email = emailRaw.toLowerCase();
     if (!ownerName || !practiceName) return fail(400, 'Please enter your name and practice name.');
     if (!EMAIL_RE.test(email)) return fail(400, 'Please enter a valid email address.');
     if (phone) {
+      // Only digits and common phone punctuation, so letters or formulas cannot be saved in the phone column.
       const digits = phone.replace(/\D/g, '');
-      if (digits.length < 10 || digits.length > 15) return fail(400, 'Please enter a valid phone number (10-15 digits) or leave it blank.');
+      if (!/^\+?[0-9(][0-9 ()\-.]*$/.test(phone) || digits.length < 10 || digits.length > 15) return fail(400, 'Please enter a valid phone number (10-15 digits) or leave it blank.');
     }
+    // Stored without a leading "+" so Google Sheets never reads the number as a formula (+1 954... becomes 1 954...).
+    const phoneStored = phone.replace(/^\+\s*/, '');
     if (data.contactConsent !== true) return fail(400, 'Please confirm that Monique Reid Bookkeeping may contact you about this review.');
 
-    // ---- Optional bot check ----
-    if (env.TURNSTILE_SECRET_KEY) {
-      const ok = await passesTurnstile(env.TURNSTILE_SECRET_KEY, data.turnstileToken, request.headers.get('CF-Connecting-IP'));
-      if (!ok) return fail(400, 'Please complete the verification check and try again.');
+    // ---- Optional bot check (only when BOTH Turnstile keys are set) ----
+    if (turnstileEnabled(env)) {
+      const ok = await passesTurnstile(env.TURNSTILE_SECRET_KEY as string, data.turnstileToken, request.headers.get('CF-Connecting-IP'));
+      if (!ok) return jsonResponse({ saved: false, error: 'Please complete the verification check and try again.', code: 'verification_required' }, 400);
     }
 
     // ---- Recompute results ----
@@ -129,18 +157,19 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     const contribution = roundMoney(data.price - totalOutflows);
     const margin = data.price > 0 ? roundPct(100 * contribution / data.price) : 0;
 
-    // The Google Sheet has no Email or Platform column yet, so both are also written into the
-    // Feedback column. Once those columns exist, the Apps Script can read `email` and `paymentPlatform`.
-    const feedback = clean(data.feedback, 400);
-    const note = clean(`Email: ${email} | Platform: ${platform} | Feedback: ${feedback || '(none)'}`, 800);
+    // The Google Sheet has no Email, Platform or Consent columns yet, so they are also written into the Feedback
+    // column (with the time consent was given). Once those columns exist, the Apps Script can read `email`,
+    // `paymentPlatform` and `consentAt` directly.
+    const consentAt = new Date().toISOString();
+    const note = clean(`Email: ${email} | Platform: ${platform} | Consent: ${consentAt} | Feedback: ${feedback || '(none)'}`).slice(0, 900);
 
     const safe = {
       sessions, price: data.price, wholesaleCost: data.wholesaleCost, wasteCushionPct: data.wasteCushionPct,
       feeRatePct: data.feeRatePct, hourlyOverhead: data.hourlyOverhead, commissionPct: data.commissionPct,
       totalCostOfMaterials, hiddenPlatformFees, providerPayrollCut, roomOperationalExpense, totalOutflows, contribution, margin,
       reportId: id,
-      ownerName: sheetSafe(ownerName), practiceName: sheetSafe(practiceName), phone: sheetSafe(phone), email: sheetSafe(email),
-      contactConsent: true, feedback: sheetSafe(note), category: data.category,
+      ownerName: sheetSafe(ownerName), practiceName: sheetSafe(practiceName), phone: sheetSafe(phoneStored), email: sheetSafe(email),
+      contactConsent: true, consentAt, feedback: sheetSafe(note), category: data.category,
       paymentPlatform: platform, paymentMethod: platform.startsWith('Cherry Financing') ? 'cherry' : 'card',
       treatmentType: data.treatmentType,
       smsStatus: 'Prepared', source: 'MedSpa Profit Pulse', secret: env.REPORT_SHARED_SECRET

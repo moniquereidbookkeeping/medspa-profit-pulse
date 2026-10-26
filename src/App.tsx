@@ -8,6 +8,7 @@ import { calculateProfitPulseMetrics, ALERT_COLORS, ALERT_THRESHOLD_NOTE, CATEGO
 import NumField from './NumField';
 import Turnstile from './Turnstile';
 import { track } from './analytics';
+import { buildReportPayload, newReportId } from './reportPayload';
 
 const STORAGE_KEY = "medspa_profit_pulse_state";
 const LEAD_CAPTURED_KEY = "medspa_profit_pulse_lead_captured";
@@ -17,13 +18,17 @@ const SITE_URL = 'https://www.moniquereidbookkeeping.com/';
 /** Swap this for a calendar booking link (Calendly, Google Calendar, etc.) when you have one. */
 const BOOKING_URL = SITE_URL;
 /** Optional: link to your privacy policy. Leave empty to hide the link. */
-const PRIVACY_URL = '';
+const PRIVACY_URL = '/privacy.html';
 const REVIEW_HEADLINE = 'Want a second set of eyes on this?';
 const REVIEW_TEXT = 'Send this result to Monique for a free 15-minute treatment profit review. No obligation.';
-const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) || '';
 // --------------------------------------------------------------------------------------------
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+const CATEGORIES = ['injectables', 'lasers', 'facials'] as const;
+/** Keep a saved/stale value inside the range the calculator and server accept. */
+const clampNum = (v: unknown, min: number, max: number, fallback: number) =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : fallback;
 
 const withUtm = (url: string, content: string) => {
   try {
@@ -60,8 +65,15 @@ export default function App() {
   const [feedback, setFeedback] = useState("");
   const [contactConsent, setContactConsent] = useState(false);
   const [website, setWebsite] = useState(""); // hidden spam trap; real visitors never fill it in
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState(""); // set by /api/config only when the server enforces it
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileReset, setTurnstileReset] = useState(0);
+  const [turnstileProblem, setTurnstileProblem] = useState(false);
+  // One id per submission attempt chain, so a retry after a timeout reuses it and rows can be de-duplicated.
+  const pendingReportId = useRef<string | null>(null);
+  // The bot-check script is downloaded only when the visitor scrolls near the form (most visitors never do).
+  const leadBoxRef = useRef<HTMLDivElement>(null);
+  const [formNear, setFormNear] = useState(typeof IntersectionObserver === 'undefined');
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveMessage, setSaveMessage] = useState("");
@@ -76,6 +88,8 @@ export default function App() {
       track('calculator_used');
     }
   };
+  /** Wrap a calculator setter so the first real use of the calculator is counted once (not the contact form). */
+  const used = <T,>(setter: (v: T) => void) => (v: T) => { engage(); setter(v); };
 
   // Load from LocalStorage on mount
   useEffect(() => {
@@ -83,16 +97,17 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.category) setCategory(parsed.category);
-        if (parsed.paymentPlatform) setPaymentPlatform(parsed.paymentPlatform);
-        if (parsed.feeRatePct !== undefined) setFeeRatePct(parsed.feeRatePct);
-        if (parsed.treatmentType) setTreatmentType(parsed.treatmentType);
-        if (parsed.sessions !== undefined) setSessions(parsed.sessions);
-        if (parsed.price !== undefined) setPrice(parsed.price);
-        if (parsed.wholesaleCost !== undefined) setWholesaleCost(parsed.wholesaleCost);
-        if (parsed.hourlyOverhead !== undefined) setHourlyOverhead(parsed.hourlyOverhead);
-        if (parsed.wasteCushionPct !== undefined) setWasteCushionPct(parsed.wasteCushionPct);
-        if (parsed.commissionPct !== undefined) setCommissionPct(parsed.commissionPct);
+        if ((CATEGORIES as readonly string[]).includes(parsed.category)) setCategory(parsed.category);
+        if (typeof parsed.paymentPlatform === 'string' && parsed.paymentPlatform in PLATFORM_DEFAULT_FEES) setPaymentPlatform(parsed.paymentPlatform);
+        const savedType = parsed.treatmentType === 'package' ? 'package' : 'single';
+        setTreatmentType(savedType);
+        setSessions(savedType === 'package' ? Math.round(clampNum(parsed.sessions, 1, 24, 4)) : 1);
+        setFeeRatePct(clampNum(parsed.feeRatePct, 0, 30, 3));
+        setPrice(clampNum(parsed.price, 0, 100000000, CATEGORY_DEFAULTS.injectables.price));
+        setWholesaleCost(clampNum(parsed.wholesaleCost, 0, 100000000, CATEGORY_DEFAULTS.injectables.wholesaleCost));
+        setHourlyOverhead(clampNum(parsed.hourlyOverhead, 0, 100000000, CATEGORY_DEFAULTS.injectables.hourlyOverhead));
+        setWasteCushionPct(clampNum(parsed.wasteCushionPct, 0, 50, 10));
+        setCommissionPct(clampNum(parsed.commissionPct, 0, 100, 30));
       }
       const captured = localStorage.getItem(LEAD_CAPTURED_KEY);
       if (captured === 'true') {
@@ -101,7 +116,23 @@ export default function App() {
     } catch (e) {
       console.warn("Could not load saved state", e);
     }
+    // Ask the server whether bot protection is on, so the page and the server always agree.
+    loadConfig();
+    const box = leadBoxRef.current;
+    if (!box || typeof IntersectionObserver === 'undefined') { setFormNear(true); return; }
+    const watcher = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) { setFormNear(true); watcher.disconnect(); }
+    }, { rootMargin: '200px 0px' });
+    watcher.observe(box);
+    return () => watcher.disconnect();
   }, []);
+
+  /** Learn whether the verification check is required. `fresh` skips the browser's short cache. */
+  const loadConfig = (fresh = false) =>
+    fetch('/api/config', fresh ? { cache: 'no-store' } : undefined)
+      .then(r => (r.ok ? r.json() : {}))
+      .then((cfg: { turnstileSiteKey?: string }) => { if (typeof cfg.turnstileSiteKey === 'string') setTurnstileSiteKey(cfg.turnstileSiteKey); })
+      .catch(() => { /* no widget; the server decides whether a check is needed */ });
 
   // Save state to LocalStorage
   useEffect(() => {
@@ -133,7 +164,8 @@ export default function App() {
   const handleCategoryChange = (cat: 'injectables' | 'lasers' | 'facials') => {
     setCategory(cat);
     const defaults = CATEGORY_DEFAULTS[cat];
-    setPrice(defaults.price);
+    // In package mode the price box holds the TOTAL package price, so scale the single-visit default.
+    setPrice(defaults.price * (treatmentType === 'package' ? sessions : 1));
     setWholesaleCost(defaults.wholesaleCost);
     setHourlyOverhead(defaults.hourlyOverhead);
   };
@@ -146,21 +178,35 @@ export default function App() {
   };
 
   const handleTreatmentTypeChange = (type: 'single' | 'package') => {
-    setTreatmentType(type);
-    if (type === 'package' && sessions === 1) {
+    if (type === treatmentType) return;
+    if (type === 'package') {
+      // The price box becomes the total for all sessions, so carry the single-visit price over as 4 visits' worth.
+      setTreatmentType('package');
       setSessions(4);
-    } else if (type === 'single') {
+      setPrice(Math.min(100000000, Math.round(price * 4 * 100) / 100));
+    } else {
+      setTreatmentType('single');
+      setPrice(Math.round((price / Math.max(1, sessions)) * 100) / 100);
       setSessions(1);
     }
   };
 
   const handleReset = () => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* storage may be blocked */ }
-    handleCategoryChange('injectables');
-    handlePlatformChange('Regular Card Processing (Stripe, Vagaro, Square)');
-    handleTreatmentTypeChange('single');
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LEAD_CAPTURED_KEY);
+    } catch (e) { /* storage may be blocked */ }
+    setCategory('injectables');
+    setPaymentPlatform('Regular Card Processing (Stripe, Vagaro, Square)');
+    setFeeRatePct(PLATFORM_DEFAULT_FEES['Regular Card Processing (Stripe, Vagaro, Square)']);
+    setTreatmentType('single');
+    setSessions(1);
+    setPrice(CATEGORY_DEFAULTS.injectables.price);
+    setWholesaleCost(CATEGORY_DEFAULTS.injectables.wholesaleCost);
+    setHourlyOverhead(CATEGORY_DEFAULTS.injectables.hourlyOverhead);
     setWasteCushionPct(10);
     setCommissionPct(30);
+    pendingReportId.current = null;
     setPhone("");
     setEmail("");
     setOwnerName("");
@@ -197,33 +243,41 @@ export default function App() {
     if (!contactConsent) {
       return fail('Please tick the box to confirm Monique may contact you about this review.');
     }
-    if (TURNSTILE_SITE_KEY && !turnstileToken) {
-      return fail('Please complete the verification check below, then try again.');
+    if (turnstileSiteKey && !turnstileToken) {
+      return fail(turnstileProblem
+        ? 'The verification check did not load. Some in-app browsers block it. Please open this page in Safari or Chrome and try again.'
+        : 'Please complete the verification check below, then try again.');
     }
 
     setSaveStatus('saving');
     setSaveMessage('Sending your request...');
+    let needsCheck = false;
 
     try {
-      const reportId = crypto.randomUUID();
+      // Reuse the same id when retrying after a failure, so a save that actually went through is not duplicated.
+      const reportId = pendingReportId.current ?? (pendingReportId.current = newReportId());
       let response: Response;
       try {
         response = await fetch('/api/report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            reportId, ownerName, practiceName, email: email.trim(), phone: phone.trim(),
-            contactConsent, feedback, website, turnstileToken,
-            category, paymentPlatform, treatmentType, sessions, price, wholesaleCost,
-            wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct,
-            source: 'MedSpa Profit Pulse'
-          })
+          body: JSON.stringify(buildReportPayload({
+            reportId, ownerName, practiceName, email, phone, feedback, contactConsent,
+            hpRef: website, turnstileToken, category, paymentPlatform, treatmentType, sessions,
+            price, wholesaleCost, wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct
+          }))
         });
       } catch {
         throw new Error('We could not reach the server. Please check your connection.');
       }
 
       const result = await response.json().catch(() => ({}));
+      if (result.code === 'verification_required') {
+        // The server requires the check but this page did not know (for example the settings changed a moment ago).
+        needsCheck = true;
+        await loadConfig(true);
+        throw new Error('Please complete the quick verification check shown below, then press the button again.');
+      }
       if (!response.ok || result.saved !== true) {
         // Messages for 4xx errors are written for visitors; anything else gets a generic line.
         const friendly = response.status >= 400 && response.status < 500 && typeof result.error === 'string'
@@ -233,6 +287,9 @@ export default function App() {
       }
 
       try { localStorage.setItem(LEAD_CAPTURED_KEY, 'true'); } catch (storageError) { console.warn('Could not remember capture preference', storageError); }
+      pendingReportId.current = null;
+      setTurnstileToken('');
+      setTurnstileReset(n => n + 1);
       setIsLeadCaptured(true);
       setIsEditingContact(false);
       setSaveStatus('ok');
@@ -241,10 +298,10 @@ export default function App() {
     } catch (error) {
       console.error('Remote save failed', error);
       const reason = error instanceof Error ? error.message : 'We could not save your details right now.';
-      fail(reason + ' Your results are still on screen. You can print or save them below and try again in a minute.');
+      fail(needsCheck ? reason : reason + ' Your results are still on screen. You can print or save them below and try again in a minute.');
       setTurnstileToken('');
       setTurnstileReset(n => n + 1);
-      track('review_request_failed');
+      track(needsCheck ? 'verification_needed' : 'review_request_failed');
     }
   };
 
@@ -264,7 +321,7 @@ export default function App() {
   ];
 
   return (
-    <div className="app-card" onChange={engage}>
+    <div className="app-card">
       {/* Print-Only Professional CPA-Ready Diagnostic Header */}
       <div className="print-header-brand">
         <h1>MONIQUE REID BOOKKEEPING</h1>
@@ -308,13 +365,13 @@ export default function App() {
       </div>
 
       {/* Payment Platform Dropdown */}
-      <div className="input-group">
+      <div className="input-group print-hide">
         <label className="label-text" htmlFor="platform-select">Choose Payment/Financing Platform</label>
         <select
           id="platform-select"
           className="manual-input"
           value={paymentPlatform}
-          onChange={(e) => handlePlatformChange(e.target.value as PaymentPlatform)}
+          onChange={(e) => { engage(); handlePlatformChange(e.target.value as PaymentPlatform); }}
         >
           <option value="Regular Card Processing (Stripe, Vagaro, Square)">Regular Card Processing (Stripe, Vagaro, Square)</option>
           <option value="Cherry Financing (6-Month No-Interest Plan)">⚡ Cherry Financing (6-Month No-Interest Plan)</option>
@@ -324,7 +381,7 @@ export default function App() {
           <option value="Custom Platform Fee Override">🛠️ Custom Platform Fee Override</option>
         </select>
         <span className="label-sub" style={{ marginTop: '4px', display: 'block', color: '#94A3B8' }}>
-          Illustrative default rate: {feeRatePct}%. Replace it with the rate on your own statements.
+          Placeholder rate: {feeRatePct}%. Financing companies quote each practice its own fee, so replace this with the rate on your own statement.
         </span>
       </div>
 
@@ -332,12 +389,12 @@ export default function App() {
       <div className="input-group">
         <label className="label-text" htmlFor="fee-rate">Effective Platform Fee Rate (%)</label>
         <div className="currency-input-wrap">
-          <NumField id="fee-rate" className="manual-input" value={feeRatePct} min={0} max={30} step={0.1} onChange={setFeeRatePct} />
+          <NumField id="fee-rate" className="manual-input" value={feeRatePct} min={0} max={30} step={0.1} onChange={used(setFeeRatePct)} />
         </div>
       </div>
 
       {/* Treatment Type Setup */}
-      <div className="input-group">
+      <div className="input-group print-hide">
         <span className="label-text" id="structure-label">
           Treatment Structure
           <span className="label-sub">{treatmentType === 'single' ? '1 visit' : `${sessions} visits`}</span>
@@ -357,7 +414,7 @@ export default function App() {
               step={1}
               integer
               disabled={treatmentType === 'single'}
-              onChange={setSessions}
+              onChange={used(setSessions)}
             />
           </div>
         </div>
@@ -365,18 +422,18 @@ export default function App() {
 
       {/* Financial Inputs */}
       <div className="input-group">
-        <label className="label-text" htmlFor="price">What Does the Client Pay You? ($)</label>
+        <label className="label-text" htmlFor="price">{treatmentType === 'package' ? `Total Package Price, All ${sessions} Visits ($)` : 'What Does the Client Pay You? ($)'}</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <NumField id="price" className="manual-input" value={price} min={0} max={100000000} step={10} onChange={setPrice} />
+          <NumField id="price" className="manual-input" value={price} min={0} max={100000000} step={10} onChange={used(setPrice)} />
         </div>
       </div>
 
       <div className="input-group">
-        <label className="label-text" htmlFor="wholesale">Wholesale Cost of Products/Boxes Used ($)</label>
+        <label className="label-text" htmlFor="wholesale">{treatmentType === 'package' ? 'Wholesale Cost of Products Per Visit ($)' : 'Wholesale Cost of Products/Boxes Used ($)'}</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <NumField id="wholesale" className="manual-input" value={wholesaleCost} min={0} max={100000000} step={5} onChange={setWholesaleCost} />
+          <NumField id="wholesale" className="manual-input" value={wholesaleCost} min={0} max={100000000} step={5} onChange={used(setWholesaleCost)} />
         </div>
       </div>
 
@@ -384,7 +441,7 @@ export default function App() {
         <label className="label-text" htmlFor="overhead">Estimated Room Overhead per Visit ($)</label>
         <div className="currency-input-wrap">
           <span>$</span>
-          <NumField id="overhead" className="manual-input" value={hourlyOverhead} min={0} max={100000000} step={5} onChange={setHourlyOverhead} />
+          <NumField id="overhead" className="manual-input" value={hourlyOverhead} min={0} max={100000000} step={5} onChange={used(setHourlyOverhead)} />
         </div>
       </div>
 
@@ -399,13 +456,13 @@ export default function App() {
               min={0}
               max={50}
               step={1}
-              onChange={setWasteCushionPct}
+              onChange={used(setWasteCushionPct)}
               style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }}
             />
             <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
           </div>
         </div>
-        <input type="range" aria-label="Product waste cushion percent" min="0" max="25" step="5" value={wasteCushionPct} onChange={(e) => setWasteCushionPct(parseFloat(e.target.value) || 0)} />
+        <input type="range" aria-label="Product waste cushion percent" min="0" max="25" step="5" value={wasteCushionPct} onChange={(e) => { engage(); setWasteCushionPct(parseFloat(e.target.value) || 0); }} />
       </div>
 
       <div className="input-group">
@@ -418,13 +475,13 @@ export default function App() {
               min={0}
               max={100}
               step={1}
-              onChange={setCommissionPct}
+              onChange={used(setCommissionPct)}
               style={{ width: '100%', background: 'none', border: 'none', color: '#F5E6C4', fontSize: '13px', fontWeight: 700, textAlign: 'right', outline: 'none' }}
             />
             <span style={{ color: '#64748B', fontSize: '13px', fontWeight: 600, marginLeft: '2px' }}>%</span>
           </div>
         </div>
-        <input type="range" aria-label="Provider commission percent" min="0" max="50" step="5" value={commissionPct} onChange={(e) => setCommissionPct(parseFloat(e.target.value) || 0)} />
+        <input type="range" aria-label="Provider commission percent" min="0" max="50" step="5" value={commissionPct} onChange={(e) => { engage(); setCommissionPct(parseFloat(e.target.value) || 0); }} />
       </div>
 
       <hr className="divider" />
@@ -472,20 +529,20 @@ export default function App() {
       </div>
 
       {/* Dynamic Accessible Contribution Alert Banner */}
-      <div className={`alert-box alert-${metrics.alertLevel}`} role="alert" style={{ display: 'block', marginTop: '16px' }}>
+      <div className={`alert-box alert-${metrics.alertLevel}`} role="status" style={{ display: 'block', marginTop: '16px' }}>
         <strong>{metrics.alertLevel === 'red' ? '🚨 Profitability Concern: ' : metrics.alertLevel === 'amber' ? '🟡 Margin Squeeze: ' : '🟢 Strong Contribution: '}</strong>
         {metrics.alertMessage}
       </div>
       <p className="threshold-note">{ALERT_THRESHOLD_NOTE}</p>
 
       {metrics.showDeferredWarning && (
-        <div className="alert-box alert-warning" role="alert" style={{ display: 'block', marginTop: '10px' }}>
+        <div className="alert-box alert-warning" role="status" style={{ display: 'block', marginTop: '10px' }}>
           {metrics.deferredWarningText}
         </div>
       )}
 
       {/* Free-review offer (lead capture) & returning visitor state */}
-      <div className="lead-box">
+      <div className="lead-box" ref={leadBoxRef} onFocus={() => setFormNear(true)}>
         {(!isLeadCaptured || isEditingContact) ? (
           <form onSubmit={handleLeadSubmit}>
             <p className="lead-headline">{REVIEW_HEADLINE}</p>
@@ -496,12 +553,15 @@ export default function App() {
             <input type="tel" className="manual-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone (optional)" aria-label="Phone number, optional" autoComplete="tel" maxLength={25} />
             <input className="manual-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this? (optional)" aria-label="What would improve this calculator? Optional" maxLength={400} />
             {/* Spam trap: hidden from people, visible to bots */}
-            <input className="hp-field" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" value={website} onChange={e => setWebsite(e.target.value)} />
+            <input className="hp-field" type="text" name="hp_ref" tabIndex={-1} autoComplete="off" aria-hidden="true" data-lpignore="true" data-1p-ignore="true" value={website} onChange={e => setWebsite(e.target.value)} />
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '4px', color: '#E2E8F0', cursor: 'pointer' }}>
               <input type="checkbox" checked={contactConsent} onChange={e => setContactConsent(e.target.checked)} required />
               I agree that Monique Reid Bookkeeping may contact me by email or phone about this review and bookkeeping services. I can opt out at any time.
             </label>
-            {TURNSTILE_SITE_KEY && <Turnstile siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} resetSignal={turnstileReset} />}
+            {turnstileSiteKey && formNear && <Turnstile siteKey={turnstileSiteKey} onToken={setTurnstileToken} onProblem={setTurnstileProblem} resetSignal={turnstileReset} />}
+            {turnstileSiteKey && turnstileProblem && (
+              <p className="save-message save-error">The verification check did not load. Some in-app browsers (including social media apps) block it. Please open this page in Safari or Chrome to send your request. You can still use the calculator and print your report here.</p>
+            )}
             <button type="submit" disabled={saveStatus === 'saving'} className="cta-btn" style={{ marginTop: '4px' }}>
               {saveStatus === 'saving' ? 'Sending...' : 'Request My Free Review'}
             </button>
@@ -531,7 +591,7 @@ export default function App() {
       <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
 
       <p className="privacy-note">
-        Your calculator entries stay in this browser. If you request a review, the details you submit are sent to Monique Reid Bookkeeping so she can follow up.
+        Your calculator entries are saved only in this browser. If you request a review, your contact details and the numbers you entered are sent to Monique Reid Bookkeeping so she can follow up. A Cloudflare security check may run before you submit, and anonymous page-visit counts may be collected to improve this tool.
         {PRIVACY_URL && <> <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">Privacy policy</a></>}
       </p>
       <p className="footer-text">

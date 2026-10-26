@@ -4,14 +4,18 @@ on:
   push:
     branches:
       - main
-      - upgrade/production-safety-review
   pull_request:
     branches:
       - main
 
+# The checks only need to read the code.
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -19,11 +23,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install existing dependencies
-        run: npm install --no-audit --no-fund
-      - name: Run calculation tests
+          cache: npm
+      - name: Install exact dependency versions
+        run: npm ci --no-audit --no-fund
+      - name: Run calculation and server tests
         run: npm run test
       - name: Type-check project
         run: npm run lint
       - name: Build production assets
         run: npm run build
+      - name: Check live dependencies for known security problems
+        # Reports problems without blocking unrelated work; Dependabot opens the fix.
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
