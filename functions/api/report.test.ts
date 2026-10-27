@@ -208,6 +208,8 @@ test('phone: international and punctuated numbers are accepted, letters and form
   assert.equal((await post(payload({ phone: 'call me maybe 9545550123' }))).status, 400);
   assert.equal((await post(payload({ phone: '=HYPERLINK(1)1234567890' }))).status, 400);
   assert.equal(calls.length, 3);
+  assert.equal(calls[2].phone, '954-555-0123', 'dots become hyphens because the sheet script does not accept dots');
+  assert.ok(/^[0-9 ()-]{10,25}$/.test(calls[0].phone) && /^[0-9 ()-]{10,25}$/.test(calls[1].phone), 'every stored phone matches the sheet script rule');
 });
 
 test('an international "+" phone number is stored without the "+", so Google Sheets never reads it as a formula', async () => {

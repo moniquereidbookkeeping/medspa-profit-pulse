@@ -146,7 +146,8 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       if (!/^\+?[0-9(][0-9 ()\-.]*$/.test(phone) || digits.length < 10 || digits.length > 15) return fail(400, 'Please enter a valid phone number (10-15 digits) or leave it blank.');
     }
     // Stored without a leading "+" so Google Sheets never reads the number as a formula (+1 954... becomes 1 954...).
-    const phoneStored = phone.replace(/^\+\s*/, '');
+    // The sheet script accepts only digits, spaces, ( ) and -, so dots (954.555.0123) are turned into hyphens.
+    const phoneStored = phone.replace(/^\+\s*/, '').replace(/\./g, '-');
     if (data.contactConsent !== true) return fail(400, 'Please confirm that Monique Reid Bookkeeping may contact you about this review.');
 
     // ---- Optional bot check (only when BOTH Turnstile keys are set) ----
