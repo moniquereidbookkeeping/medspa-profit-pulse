@@ -30,7 +30,7 @@ const REVIEW_TEXT = 'Enter your details to save your full report. Monique will a
 // --------------------------------------------------------------------------------------------
 
 /** Your Google Sheet script currently refuses a request with no phone number. Set this to false after the script accepts blank phones. */
-const PHONE_REQUIRED = true;
+const PHONE_REQUIRED = false;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -674,7 +674,7 @@ export default function App() {
                 )}
               </p>
             )}
-            <input type="tel" className="manual-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder={PHONE_REQUIRED ? 'Phone (required)' : 'Phone (optional)'} aria-label={PHONE_REQUIRED ? 'Phone number' : 'Phone number, optional'} autoComplete="tel" maxLength={25} />
+            <input type="tel" className="manual-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder={PHONE_REQUIRED ? 'Phone (required)' : 'Phone (optional, for a faster review)'} aria-label={PHONE_REQUIRED ? 'Phone number' : 'Phone number, optional'} autoComplete="tel" maxLength={25} />
             <input className="manual-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What should we improve? (optional)" aria-label="Optional: tell us anything that was confusing or missing, or what would make this calculator more useful" maxLength={400} />
             {/* Spam trap: hidden from people, visible to bots */}
             <input className="hp-field" type="text" name="hp_ref" tabIndex={-1} autoComplete="off" aria-hidden="true" data-lpignore="true" data-1p-ignore="true" value={website} onChange={e => setWebsite(e.target.value)} />
