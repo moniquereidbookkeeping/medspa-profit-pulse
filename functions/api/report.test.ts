@@ -257,3 +257,11 @@ test('older pages without the new scale fields still save, and new fields are ra
   assert.equal((await post(payload({ treatmentsPerMonth: '20' }))).status, 400);
   assert.equal(calls.length, 2);
 });
+
+test('throw-away and placeholder email addresses are refused and nothing is saved', async () => {
+  const calls = mockUpstream();
+  assert.equal((await post(payload({ email: 'x@mailinator.com' }))).status, 400);
+  assert.equal((await post(payload({ email: 'test@test.com' }))).status, 400);
+  assert.equal(calls.length, 0);
+  assert.equal((await post(payload({ email: 'paul@gmail.com' }))).status, 200);
+});

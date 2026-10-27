@@ -9,7 +9,7 @@ import NumField from './NumField';
 import Turnstile from './Turnstile';
 import { track } from './analytics';
 import { buildReportPayload, newReportId } from './reportPayload';
-import { emailProblem, suggestEmail } from './emailCheck';
+import { emailProblem, suggestEmail, isThrowawayEmail } from './emailCheck';
 
 const STORAGE_KEY = "medspa_profit_pulse_state";
 const LEAD_CAPTURED_KEY = "medspa_profit_pulse_lead_captured";
@@ -243,6 +243,11 @@ export default function App() {
       setEmailNote({ kind: 'error', text: problem });
       emailRef.current?.focus();
       return fail('Please fix your email address, then press the button again.');
+    }
+    if (isThrowawayEmail(email)) {
+      setEmailNote({ kind: 'error', text: 'Please use a real email address where Monique can send your follow-up.' });
+      emailRef.current?.focus();
+      return fail('Please use a real email address to unlock your report.');
     }
     const maybe = suggestEmail(email);
     if (maybe && keptEmail.current !== email.trim()) {

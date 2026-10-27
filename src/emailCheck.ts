@@ -42,3 +42,21 @@ export function suggestEmail(raw: string): string | null {
   if (TLD_FIXES[tld]) return `${local}@${domain.slice(0, dot)}.${TLD_FIXES[tld]}`;
   return null;
 }
+
+/** Throw-away and obviously fake mailbox domains. Real follow-up is impossible with these, so they do not unlock the report. */
+const THROWAWAY_DOMAINS = new Set([
+  'example.com', 'example.org', 'example.net', 'test.com', 'test.test', 'email.com', 'fake.com', 'none.com', 'noemail.com', 'nomail.com', 'asdf.com', 'abc.com', 'a.com', 'aa.com', 'domain.com',
+  'mailinator.com', 'guerrillamail.com', 'guerrillamail.net', 'sharklasers.com', '10minutemail.com', '10minutemail.net', 'tempmail.com', 'temp-mail.org', 'tempmail.net',
+  'yopmail.com', 'yopmail.net', 'throwawaymail.com', 'trashmail.com', 'getnada.com', 'maildrop.cc', 'dispostable.com', 'fakeinbox.com', 'mailnesia.com', 'mintemail.com', 'mohmal.com', 'emailondeck.com'
+]);
+
+/** True for a throw-away or placeholder address such as name@mailinator.com or test@test.com. */
+export function isThrowawayEmail(raw: string): boolean {
+  const email = raw.trim().toLowerCase();
+  const at = email.lastIndexOf('@');
+  if (at < 1) return false;
+  const domain = email.slice(at + 1);
+  const local = email.slice(0, at);
+  if (THROWAWAY_DOMAINS.has(domain)) return true;
+  return /^(test|testing|asdf|qwerty|noemail|none|fake|abc|xxx|aaa|no)$/.test(local) && domain.split('.')[0].length <= 4;
+}

@@ -1,4 +1,5 @@
 import { calculateInsights } from '../../src/calc';
+import { isThrowawayEmail } from '../../src/emailCheck';
 
 interface Env {
   APPS_SCRIPT_URL: string;
@@ -140,6 +141,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     const email = emailRaw.toLowerCase();
     if (!ownerName || !practiceName) return fail(400, 'Please enter your name and practice name.');
     if (!EMAIL_RE.test(email)) return fail(400, 'Please enter a valid email address.');
+    if (isThrowawayEmail(email)) return fail(400, 'Please use a real email address where Monique can send your follow-up.');
     if (phone) {
       // Only digits and common phone punctuation, so letters or formulas cannot be saved in the phone column.
       const digits = phone.replace(/\D/g, '');

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emailProblem, suggestEmail } from './emailCheck.ts';
+import { emailProblem, suggestEmail, isThrowawayEmail } from './emailCheck.ts';
 
 test('plain-language problems for common mistakes', () => {
   assert.match(emailProblem('')!, /enter your email/);
@@ -23,4 +23,9 @@ test('suggests a fix for common domain and ending typos, and stays quiet otherwi
   assert.equal(suggestEmail('jane@glowspa.com'), null);
   assert.equal(suggestEmail('jane@gmail.com'), null);
   assert.equal(suggestEmail('not an email'), null);
+});
+
+test('flags throw-away and placeholder addresses but not real business or personal ones', () => {
+  for (const bad of ['x@mailinator.com', 'jane@YOPMAIL.com', 'test@test.com', 'asdf@asdf.com', 'me@example.com', 'none@none.com']) assert.equal(isThrowawayEmail(bad), true, bad);
+  for (const ok of ['jane@glowspa.com', 'paul@gmail.com', 'testing.lab@bigclinic.com', 'dr.test@hotmail.com', 'info@medspa-test-kitchen.com']) assert.equal(isThrowawayEmail(ok), false, ok);
 });
