@@ -1,4 +1,4 @@
-# The MedSpa Profit Pulse
+# The Profit Pulse (MedSpa Profit Calculator)
 
 Free treatment-profit calculator for MedSpas, built by Monique Reid Bookkeeping as a lead magnet.
 Visitors see what a treatment really keeps after payment/financing fees, product, provider pay and room cost,

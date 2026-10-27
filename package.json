@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": "tsx --test src/calc.test.ts src/reportPayload.test.ts functions/api/report.test.ts functions/api/config.test.ts"
+    "test": "tsx --test src/calc.test.ts src/reportPayload.test.ts src/emailCheck.test.ts functions/api/report.test.ts functions/api/config.test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.0",

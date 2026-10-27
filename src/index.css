@@ -594,3 +594,15 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .report-locked .print-lock-note h1 { font-size: 20pt !important; color: #000 !important; margin: 0 0 16px !important; }
   .report-locked .print-lock-note p { font-size: 12pt !important; color: #000 !important; margin: 0 0 10px !important; }
 }
+
+@media print {
+  /* Crisp print: system fonts embed as real (hinted) fonts in PDFs, while the web font becomes a soft-looking Type 3 font.
+     Shadows and blurs are dropped because browsers turn them into low-resolution pictures. */
+  html, body, .app-card, .app-card * { font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important; text-shadow: none !important; box-shadow: none !important; filter: none !important; -webkit-font-smoothing: auto !important; }
+}
+
+.field-note { margin: -4px 2px 0; font-size: 12.5px; line-height: 1.5; }
+.field-note-error { color: #FCA5A5; }
+.field-note-suggest { color: #FDE68A; }
+.link-btn { background: none; border: 0; padding: 0; margin: 0 0 0 4px; font: inherit; font-weight: 700; color: #F5E6C4; text-decoration: underline; cursor: pointer; }
+@media print { .emoji-icon { display: none !important; } }

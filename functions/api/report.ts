@@ -197,7 +197,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     };
 
     const controller = new AbortController();
-    const abort = setTimeout(() => controller.abort(), 10000);
+    const abort = setTimeout(() => controller.abort(), 20000); // Google Apps Script can be slow on its first call
     let res: Response;
     try { res = await fetch(env.APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(safe), signal: controller.signal, redirect: 'follow' }); }
     finally { clearTimeout(abort); }

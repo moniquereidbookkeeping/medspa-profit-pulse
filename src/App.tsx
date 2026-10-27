@@ -9,12 +9,13 @@ import NumField from './NumField';
 import Turnstile from './Turnstile';
 import { track } from './analytics';
 import { buildReportPayload, newReportId } from './reportPayload';
+import { emailProblem, suggestEmail } from './emailCheck';
 
 const STORAGE_KEY = "medspa_profit_pulse_state";
 const LEAD_CAPTURED_KEY = "medspa_profit_pulse_lead_captured";
 
 // ---- Easy-to-edit business settings -------------------------------------------------------
-const SITE_URL = 'https://www.moniquereidbookkeeping.com/';
+const SITE_URL = 'https://moniquereidbookkeeping.com/';
 /** Swap this for a calendar booking link (Calendly, Google Calendar, etc.) when you have one. */
 const BOOKING_URL = SITE_URL;
 /** Optional: link to your privacy policy. Leave empty to hide the link. */
@@ -34,19 +35,6 @@ const CATEGORIES = ['injectables', 'lasers', 'facials'] as const;
 /** Keep a saved/stale value inside the range the calculator and server accept. */
 const clampNum = (v: unknown, min: number, max: number, fallback: number) =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : fallback;
-
-const withUtm = (url: string, content: string) => {
-  try {
-    const u = new URL(url);
-    u.searchParams.set('utm_source', 'profit-pulse');
-    u.searchParams.set('utm_medium', 'calculator');
-    u.searchParams.set('utm_campaign', 'medspa-profit-pulse');
-    u.searchParams.set('utm_content', content);
-    return u.toString();
-  } catch {
-    return url;
-  }
-};
 
 type SaveStatus = 'idle' | 'saving' | 'ok' | 'error';
 
@@ -71,6 +59,10 @@ export default function App() {
   const [practiceName, setPracticeName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState<string>("");
+  // Plain-language help under the email box: a problem to fix, or a "did you mean" suggestion.
+  const [emailNote, setEmailNote] = useState<{ kind: 'error' | 'suggest'; text: string; fix?: string } | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const keptEmail = useRef<string>(''); // an address the visitor confirmed is spelled as intended
   const [feedback, setFeedback] = useState("");
   const [contactConsent, setContactConsent] = useState(false);
   const [website, setWebsite] = useState(""); // hidden spam trap; real visitors never fill it in
@@ -243,8 +235,18 @@ export default function App() {
     if (!ownerName.trim() || !practiceName.trim()) {
       return fail('Please enter your name and practice name.');
     }
-    if (!EMAIL_RE.test(email.trim())) {
-      return fail('Please enter a valid email address so Monique can reach you.');
+    const problem = emailProblem(email) ?? (EMAIL_RE.test(email.trim()) ? null : 'This does not look like a full email address. Please check it.');
+    if (problem) {
+      setEmailNote({ kind: 'error', text: problem });
+      emailRef.current?.focus();
+      return fail('Please fix your email address, then press the button again.');
+    }
+    const maybe = suggestEmail(email);
+    if (maybe && keptEmail.current !== email.trim()) {
+      keptEmail.current = email.trim(); // a second press keeps the address as typed
+      setEmailNote({ kind: 'suggest', text: `Is this the right email? Did you mean ${maybe}?`, fix: maybe });
+      emailRef.current?.focus();
+      return fail('Please check your email address. If it is correct as typed, press the button again.');
     }
     if (phone.trim()) {
       const digits = phone.replace(/\D/g, '');
@@ -306,7 +308,7 @@ export default function App() {
       setIsLeadCaptured(true);
       setIsEditingContact(false);
       setSaveStatus('ok');
-      setSaveMessage('Thank you. Your report is opening now. If it does not, press the Save My Full Report button below. Monique will follow up at ' + email.trim() + '.');
+      setSaveMessage('Thank you. Your report is opening now. If it does not, press the Print / Save My Full Report button below. Monique will follow up at ' + email.trim() + '.');
       track('review_requested', { alert: metrics.alertLevel, category });
       // The full report opens right after the details are saved. The button below stays available if a browser blocks this.
       setTimeout(() => { track('report_printed'); window.print(); }, 400);
@@ -354,13 +356,13 @@ export default function App() {
       {/* Printed instead of the report when the visitor has not yet saved their details (for example Ctrl+P) */}
       <div className="print-lock-note">
         <h1>MONIQUE REID BOOKKEEPING</h1>
-        <p>Your full MedSpa Profit Pulse report is saved after you enter your name, practice and email on the calculator page.</p>
+        <p>Your full Profit Pulse report is saved after you enter your name, practice and email on the calculator page.</p>
         <p>medspa.moniquereidbookkeeping.com</p>
       </div>
       {/* Print-Only Professional CPA-Ready Diagnostic Header */}
       <div className="print-header-brand">
         <h1>MONIQUE REID BOOKKEEPING</h1>
-        <p>MedSpa Treatment Profitability Diagnostic</p>
+        <p>Treatment Profitability Diagnostic</p>
         <p className="print-report-date">Report date: {new Date().toLocaleDateString('en-US')}</p>
         <p className="print-contact-details">Practice: {practiceName || 'Not provided'} • Prepared for: {ownerName || 'Not provided'}</p>
         <p>Platform: {paymentPlatform} • Treatment: {category} • Structure: {treatmentType === 'single' ? 'Single visit' : `${sessions}-session package`}</p>
@@ -378,9 +380,9 @@ export default function App() {
             Reset Defaults
           </button>
         </div>
-        <h1>THE MEDSPA PROFIT PULSE</h1>
+        <h1>THE PROFIT PULSE</h1>
         <p>Find Missing Cash In Your Menu</p>
-        <p className="brand-line">A free tool by Monique Reid Bookkeeping</p>
+        <p className="brand-line">For MedSpas &amp; aesthetic practices. A free tool by Monique Reid Bookkeeping</p>
       </div>
 
       {/* Category Tabs */}
@@ -634,7 +636,7 @@ export default function App() {
 
       {/* Dynamic Accessible Contribution Alert Banner */}
       <div className={`alert-box alert-${metrics.alertLevel}`} role="status" style={{ display: 'block', marginTop: '16px' }}>
-        <strong>{metrics.alertLevel === 'red' ? '🚨 Profitability Concern: ' : metrics.alertLevel === 'amber' ? '🟡 Margin Squeeze: ' : '🟢 Strong Contribution: '}</strong>
+        <strong><span className="emoji-icon" aria-hidden="true">{metrics.alertLevel === 'red' ? '🚨 ' : metrics.alertLevel === 'amber' ? '🟡 ' : '🟢 '}</span>{metrics.alertLevel === 'red' ? 'Profitability Concern: ' : metrics.alertLevel === 'amber' ? 'Margin Squeeze: ' : 'Strong Contribution: '}</strong>
         {metrics.alertMessage}
       </div>
       <p className="threshold-note">{ALERT_THRESHOLD_NOTE}</p>
@@ -648,14 +650,22 @@ export default function App() {
       {/* Free-review offer (lead capture) & returning visitor state */}
       <div className="lead-box" ref={leadBoxRef} onFocus={() => setFormNear(true)}>
         {(!isLeadCaptured || isEditingContact) ? (
-          <form onSubmit={handleLeadSubmit}>
+          <form onSubmit={handleLeadSubmit} noValidate>
             <p className="lead-headline">{REVIEW_HEADLINES[metrics.alertLevel]}</p>
             <p style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>{REVIEW_TEXT}</p>
             <input className="manual-input" value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Your name (required)" aria-label="Your name" autoComplete="name" required maxLength={100} />
             <input className="manual-input" value={practiceName} onChange={e => setPracticeName(e.target.value)} placeholder="Practice name (required)" aria-label="Practice name" autoComplete="organization" required maxLength={120} />
-            <input type="email" className="manual-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (required)" aria-label="Email address" autoComplete="email" inputMode="email" required maxLength={254} />
+            <input ref={emailRef} type="email" className="manual-input" value={email} onChange={e => { setEmail(e.target.value); setEmailNote(null); }} placeholder="Email (required)" aria-label="Email address" aria-describedby={emailNote ? 'email-note' : undefined} autoComplete="email" inputMode="email" required maxLength={254} />
+            {emailNote && (
+              <p id="email-note" role="alert" className={`field-note field-note-${emailNote.kind}`}>
+                {emailNote.text}
+                {emailNote.fix && (
+                  <> <button type="button" className="link-btn" onClick={() => { setEmail(emailNote.fix!); setEmailNote(null); emailRef.current?.focus(); }}>Use {emailNote.fix}</button></>
+                )}
+              </p>
+            )}
             <input type="tel" className="manual-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone (optional)" aria-label="Phone number, optional" autoComplete="tel" maxLength={25} />
-            <input className="manual-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What would improve this? (optional)" aria-label="What would improve this calculator? Optional" maxLength={400} />
+            <input className="manual-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Anything confusing or missing? Tell us how to make this better (optional)" aria-label="Optional: tell us anything that was confusing or missing, or what would make this calculator more useful" maxLength={400} />
             {/* Spam trap: hidden from people, visible to bots */}
             <input className="hp-field" type="text" name="hp_ref" tabIndex={-1} autoComplete="off" aria-hidden="true" data-lpignore="true" data-1p-ignore="true" value={website} onChange={e => setWebsite(e.target.value)} />
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '4px', color: '#E2E8F0', cursor: 'pointer' }}>
@@ -667,7 +677,7 @@ export default function App() {
               <p className="save-message save-error">The verification check did not load. Some in-app browsers (including social media apps) block it. Please open this page in Safari or Chrome to send your request. You can still use the calculator and print your report here.</p>
             )}
             <button type="submit" disabled={saveStatus === 'saving'} className="cta-btn" style={{ marginTop: '4px' }}>
-              {saveStatus === 'saving' ? 'Sending...' : 'Save My Full Report'}
+              {saveStatus === 'saving' ? 'Sending...' : 'Unlock My Full Report'}
             </button>
           </form>
         ) : (
@@ -685,10 +695,10 @@ export default function App() {
         {saveMessage && (
           <p role={saveStatus === 'error' ? 'alert' : 'status'} className={`save-message save-${saveStatus}`}>{saveMessage}</p>
         )}
-        <button type="button" className="secondary-cta-btn print-report-btn" onClick={handlePrint} style={{ marginTop: '12px' }}>{isLeadCaptured ? 'Print / Save My Full Report' : 'Save My Full Report (enter your details above)'}</button>
+        <button type="button" className="secondary-cta-btn print-report-btn" onClick={handlePrint} style={{ marginTop: '12px' }}>{isLeadCaptured ? 'Print / Save My Full Report' : 'Unlock My Full Report (enter your details above)'}</button>
       </div>
 
-      <a href={withUtm(BOOKING_URL, 'results_cta')} onClick={() => track('cta_clicked')} target="_blank" rel="noopener noreferrer" className="secondary-cta-btn">
+      <a href={BOOKING_URL} onClick={() => track('cta_clicked')} target="_blank" rel="noopener" className="secondary-cta-btn">
         See How Monique Helps MedSpas
       </a>
 
