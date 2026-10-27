@@ -29,6 +29,9 @@ const REVIEW_HEADLINES = {
 const REVIEW_TEXT = 'Enter your details to save your full report. Monique will also follow up about a free 15-minute treatment profit review. No obligation.';
 // --------------------------------------------------------------------------------------------
 
+/** Your Google Sheet script currently refuses a request with no phone number. Set this to false after the script accepts blank phones. */
+const PHONE_REQUIRED = true;
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const CATEGORIES = ['injectables', 'lasers', 'facials'] as const;
@@ -247,6 +250,9 @@ export default function App() {
       setEmailNote({ kind: 'suggest', text: `Is this the right email? Did you mean ${maybe}?`, fix: maybe });
       emailRef.current?.focus();
       return fail('Please check your email address. If it is correct as typed, press the button again.');
+    }
+    if (PHONE_REQUIRED && !phone.trim()) {
+      return fail('Please enter a phone number so Monique can follow up.');
     }
     if (phone.trim()) {
       const digits = phone.replace(/\D/g, '');
@@ -668,7 +674,7 @@ export default function App() {
                 )}
               </p>
             )}
-            <input type="tel" className="manual-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone (optional)" aria-label="Phone number, optional" autoComplete="tel" maxLength={25} />
+            <input type="tel" className="manual-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder={PHONE_REQUIRED ? 'Phone (required)' : 'Phone (optional)'} aria-label={PHONE_REQUIRED ? 'Phone number' : 'Phone number, optional'} autoComplete="tel" maxLength={25} />
             <input className="manual-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What should we improve? (optional)" aria-label="Optional: tell us anything that was confusing or missing, or what would make this calculator more useful" maxLength={400} />
             {/* Spam trap: hidden from people, visible to bots */}
             <input className="hp-field" type="text" name="hp_ref" tabIndex={-1} autoComplete="off" aria-hidden="true" data-lpignore="true" data-1p-ignore="true" value={website} onChange={e => setWebsite(e.target.value)} />
