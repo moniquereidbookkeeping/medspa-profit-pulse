@@ -299,7 +299,7 @@ export default function App() {
           ? result.error
           : 'We could not save your details right now.';
         // A short code (for example upstream_rejected) tells Monique which step failed, without showing technical details.
-        const code = typeof result.code === 'string' && /^[a-z0-9_]{3,40}$/.test(result.code) ? ` (Code: ${result.code})` : '';
+        const code = typeof result.code === 'string' && /^[a-z0-9_]{3,40}$/.test(result.code) ? ` (Code: ${result.code})` : ` (Code: http_${response.status})`;
         throw new Error(friendly + code);
       }
 
@@ -701,7 +701,7 @@ export default function App() {
       </div>
 
       <a href={BOOKING_URL} onClick={() => track('cta_clicked')} target="_blank" rel="noopener" className="secondary-cta-btn">
-        See How Monique Helps MedSpas
+        See How Monique Helps Practices Like Yours
       </a>
 
       <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Yearly figures assume the same price, costs and monthly volume all year. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
