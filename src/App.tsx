@@ -298,7 +298,9 @@ export default function App() {
         const friendly = response.status >= 400 && response.status < 500 && typeof result.error === 'string'
           ? result.error
           : 'We could not save your details right now.';
-        throw new Error(friendly);
+        // A short code (for example upstream_rejected) tells Monique which step failed, without showing technical details.
+        const code = typeof result.code === 'string' && /^[a-z0-9_]{3,40}$/.test(result.code) ? ` (Code: ${result.code})` : '';
+        throw new Error(friendly + code);
       }
 
       try { localStorage.setItem(LEAD_CAPTURED_KEY, 'true'); } catch (storageError) { console.warn('Could not remember capture preference', storageError); }
@@ -665,7 +667,7 @@ export default function App() {
               </p>
             )}
             <input type="tel" className="manual-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone (optional)" aria-label="Phone number, optional" autoComplete="tel" maxLength={25} />
-            <input className="manual-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Anything confusing or missing? Tell us how to make this better (optional)" aria-label="Optional: tell us anything that was confusing or missing, or what would make this calculator more useful" maxLength={400} />
+            <input className="manual-input" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="What should we improve? (optional)" aria-label="Optional: tell us anything that was confusing or missing, or what would make this calculator more useful" maxLength={400} />
             {/* Spam trap: hidden from people, visible to bots */}
             <input className="hp-field" type="text" name="hp_ref" tabIndex={-1} autoComplete="off" aria-hidden="true" data-lpignore="true" data-1p-ignore="true" value={website} onChange={e => setWebsite(e.target.value)} />
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', marginTop: '4px', color: '#E2E8F0', cursor: 'pointer' }}>

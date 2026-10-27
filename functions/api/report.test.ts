@@ -14,7 +14,7 @@ function mockUpstream(mode: 'ok' | 'rejects' | 'down' = 'ok') {
       return new Response(JSON.stringify({ success: token === 'good-token' }), { status: 200 });
     }
     if (opts?.method === 'GET') return new Response(JSON.stringify({ status: 'ready', submissionsTabFound: true }), { status: 200 });
-    if (mode === 'down') throw new Error('network');
+    if (mode === 'down') throw new TypeError('network');
     const sent = JSON.parse(opts.body);
     calls.push(sent);
     if (mode === 'rejects') return new Response(JSON.stringify({ saved: false, error: 'Exception: internal sheet detail' }), { status: 200 });
@@ -112,10 +112,12 @@ test('visitors get a friendly error and internal details stay in the logs', asyn
   const r = await post(payload());
   assert.equal(r.status, 502);
   assert.equal(r.body.saved, false);
+  assert.equal(r.body.code, 'upstream_rejected', 'a short code says which step failed');
   assert.ok(!JSON.stringify(r.body).includes('internal sheet detail'));
   mockUpstream('down');
   const r2 = await post(payload());
   assert.equal(r2.status, 502);
+  assert.equal(r2.body.code, 'upstream_unreachable');
   assert.ok(!JSON.stringify(r2.body).includes('network'));
 });
 
