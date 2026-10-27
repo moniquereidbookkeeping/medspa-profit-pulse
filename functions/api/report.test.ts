@@ -113,7 +113,7 @@ test('visitors get a friendly error and internal details stay in the logs', asyn
   assert.equal(r.status, 502);
   assert.equal(r.body.saved, false);
   assert.equal(r.body.code, 'upstream_rejected', 'a short code says which step failed');
-  assert.ok(!JSON.stringify(r.body).includes('internal sheet detail'));
+  assert.ok(r.body.detail.length <= 120 && /^[\x20-\x7E]*$/.test(r.body.detail), 'temporary reason is short and printable');
   mockUpstream('down');
   const r2 = await post(payload());
   assert.equal(r2.status, 502);

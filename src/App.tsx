@@ -300,7 +300,9 @@ export default function App() {
           : 'We could not save your details right now.';
         // A short code (for example upstream_rejected) tells Monique which step failed, without showing technical details.
         const code = typeof result.code === 'string' && /^[a-z0-9_]{3,40}$/.test(result.code) ? ` (Code: ${result.code})` : ` (Code: http_${response.status})`;
-        throw new Error(friendly + code);
+        // TEMPORARY while the sheet connection is being tested: show the short reason from the sheet script.
+        const why = typeof result.detail === 'string' && result.detail ? ` Reason: ${result.detail.slice(0, 120)}` : '';
+        throw new Error(friendly + code + why);
       }
 
       try { localStorage.setItem(LEAD_CAPTURED_KEY, 'true'); } catch (storageError) { console.warn('Could not remember capture preference', storageError); }
@@ -707,7 +709,7 @@ export default function App() {
       <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Yearly figures assume the same price, costs and monthly volume all year. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
 
       <p className="privacy-note">
-        Your calculator entries are saved only in this browser. If you request a review, your contact details and the numbers you entered are sent to Monique Reid Bookkeeping so she can follow up. A Cloudflare security check may run before you submit, and anonymous page-visit counts may be collected to improve this tool.
+        Your calculator entries are saved only in this browser. When you unlock your full report, your contact details and the numbers you entered are saved by Monique Reid Bookkeeping so she can follow up. A Cloudflare security check confirms you are a person, and we count visits without recording who you are.
         {PRIVACY_URL && <> <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer">Privacy policy</a></>}
       </p>
       <p className="footer-text">
