@@ -137,7 +137,8 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     const emailRaw = field(data.email, 254);
     const phone = field(data.phone, 25);
     const feedback = field(data.feedback, 400);
-    if (ownerName === null || practiceName === null || emailRaw === null || phone === null || feedback === null) return fail(400, 'One of your entries is too long or not valid text.');
+    const treatmentName = field(data.treatmentName, 60);
+    if (ownerName === null || practiceName === null || emailRaw === null || phone === null || feedback === null || treatmentName === null) return fail(400, 'One of your entries is too long or not valid text.');
     const email = emailRaw.toLowerCase();
     if (!ownerName || !practiceName) return fail(400, 'Please enter your name and practice name.');
     if (!EMAIL_RE.test(email)) return fail(400, 'Please enter a valid email address.');
@@ -185,7 +186,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       if (ins.extraYearlyCash !== null) parts.push(`Extra per year: $${Math.round(ins.extraYearlyCash)}`);
       scale = ` | ${parts.join(' | ')}`;
     }
-    const note = clean(`Email: ${email} | Platform: ${platform} | Consent: ${consentAt}${scale} | Feedback: ${feedback || '(none)'}`).slice(0, 900);
+    const note = clean(`Email: ${email} | Platform: ${platform}${treatmentName ? ` | Treatment: ${treatmentName}` : ''} | Consent: ${consentAt}${scale} | Feedback: ${feedback || '(none)'}`).slice(0, 900);
 
     const safe = {
       sessions, price: data.price, wholesaleCost: data.wholesaleCost, wasteCushionPct: data.wasteCushionPct,

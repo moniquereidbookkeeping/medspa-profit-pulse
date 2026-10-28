@@ -23,7 +23,7 @@ test('the exact payload the page builds is accepted by the real server code', as
       contactConsent: true, hpRef: '', turnstileToken: '', category: 'lasers',
       paymentPlatform: 'CareCredit Standard Doctor Fee Program', treatmentType: 'package', sessions: 4,
       price: 2400, wholesaleCost: 150, wasteCushionPct: 10, feeRatePct: 5.9, hourlyOverhead: 120, commissionPct: 25,
-      treatmentsPerMonth: 12, treatmentMinutes: 45, targetMarginPct: 40
+      treatmentsPerMonth: 12, treatmentMinutes: 45, targetMarginPct: 40, treatmentName: 'ignored on this tab'
     });
     const res = await onRequestPost({
       request: new Request('https://site.test/api/report', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://site.test' }, body: JSON.stringify(payload) }),
@@ -45,7 +45,15 @@ test('the page never sends calculator totals for the server to trust', () => {
     reportId: newReportId(), ownerName: 'a', practiceName: 'b', email: 'c@d.co', phone: '', feedback: '', contactConsent: true,
     hpRef: '', turnstileToken: '', category: 'facials', paymentPlatform: 'Regular Card Processing (Stripe, Vagaro, Square)',
     treatmentType: 'single', sessions: 1, price: 1, wholesaleCost: 1, wasteCushionPct: 1, feeRatePct: 1, hourlyOverhead: 1, commissionPct: 1,
-    treatmentsPerMonth: 1, treatmentMinutes: 1, targetMarginPct: 1
+    treatmentsPerMonth: 1, treatmentMinutes: 1, targetMarginPct: 1, treatmentName: ''
   });
   for (const k of ['contribution', 'margin', 'totalOutflows', 'hiddenPlatformFees', 'providerPayrollCut', 'totalCostOfMaterials', 'roomOperationalExpense']) assert.ok(!(k in p), k);
+});
+
+test('the treatment name is sent only from the Other tab', () => {
+  const base: any = { reportId: newReportId(), ownerName: 'a', practiceName: 'b', email: 'c@d.co', phone: '', feedback: '', contactConsent: true, hpRef: '', turnstileToken: '',
+    paymentPlatform: 'Regular Card Processing (Stripe, Vagaro, Square)', treatmentType: 'single', sessions: 1, price: 1, wholesaleCost: 1, wasteCushionPct: 1, feeRatePct: 1, hourlyOverhead: 1, commissionPct: 1,
+    treatmentsPerMonth: 1, treatmentMinutes: 1, targetMarginPct: 1, treatmentName: '  CoolSculpting ' };
+  assert.equal(buildReportPayload({ ...base, category: 'other' }).treatmentName, 'CoolSculpting');
+  assert.equal(buildReportPayload({ ...base, category: 'facials' }).treatmentName, '');
 });

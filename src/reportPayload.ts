@@ -21,6 +21,7 @@ export interface ReportPayloadInput {
   feeRatePct: number;
   hourlyOverhead: number;
   commissionPct: number;
+  treatmentName: string;
   treatmentsPerMonth: number;
   treatmentMinutes: number;
   targetMarginPct: number;
@@ -47,6 +48,8 @@ export function buildReportPayload(i: ReportPayloadInput) {
     feeRatePct: i.feeRatePct,
     hourlyOverhead: i.hourlyOverhead,
     commissionPct: i.commissionPct,
+    // Only the "Other treatment" tab asks for a name; other tabs send nothing.
+    treatmentName: i.category === 'other' ? i.treatmentName.trim() : '',
     treatmentsPerMonth: i.treatmentsPerMonth,
     treatmentMinutes: i.treatmentMinutes,
     targetMarginPct: i.targetMarginPct,

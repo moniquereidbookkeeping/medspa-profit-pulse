@@ -60,6 +60,7 @@ export default function App() {
   const [treatmentMinutes, setTreatmentMinutes] = useState<number>(CATEGORY_MINUTES.injectables);
   const [targetPct, setTargetPct] = useState<number>(SCALE_DEFAULTS.targetPct);
   const [unitsPerVisit, setUnitsPerVisit] = useState<number>(SCALE_DEFAULTS.unitsPerVisit);
+  const [treatmentName, setTreatmentName] = useState(""); // optional name for the Other treatment tab
 
   const [ownerName, setOwnerName] = useState("");
   const [practiceName, setPracticeName] = useState("");
@@ -119,6 +120,7 @@ export default function App() {
         setTreatmentMinutes(clampNum(parsed.treatmentMinutes, SCALE_LIMITS.treatmentMinutes.min, SCALE_LIMITS.treatmentMinutes.max, CATEGORY_MINUTES[(CATEGORIES as readonly string[]).includes(parsed.category) ? parsed.category as keyof typeof CATEGORY_MINUTES : 'injectables']));
         setTargetPct(clampNum(parsed.targetPct, SCALE_LIMITS.targetPct.min, SCALE_LIMITS.targetPct.max, SCALE_DEFAULTS.targetPct));
         setUnitsPerVisit(clampNum(parsed.unitsPerVisit, SCALE_LIMITS.unitsPerVisit.min, SCALE_LIMITS.unitsPerVisit.max, 0));
+        if (typeof parsed.treatmentName === 'string') setTreatmentName(parsed.treatmentName.replace(/[\u0000-\u001F\u007F]/g, '').slice(0, 60));
       }
       const captured = localStorage.getItem(LEAD_CAPTURED_KEY);
       if (captured === 'true') {
@@ -151,13 +153,13 @@ export default function App() {
       const stateToSave = {
         category, paymentPlatform, feeRatePct, treatmentType, sessions,
         price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct,
-        treatmentsPerMonth, treatmentMinutes, targetPct, unitsPerVisit
+        treatmentsPerMonth, treatmentMinutes, targetPct, unitsPerVisit, treatmentName
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch (e) {
       console.warn("Could not save state", e);
     }
-  }, [category, paymentPlatform, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct, treatmentsPerMonth, treatmentMinutes, targetPct, unitsPerVisit]);
+  }, [category, paymentPlatform, feeRatePct, treatmentType, sessions, price, wholesaleCost, hourlyOverhead, wasteCushionPct, commissionPct, treatmentsPerMonth, treatmentMinutes, targetPct, unitsPerVisit, treatmentName]);
 
   const calcInputs = { price, wholesaleCost, hourlyOverhead, feeRatePct, sessions, treatmentType, wasteCushionPct, commissionPct };
   const metrics = calculateProfitPulseMetrics(calcInputs);
@@ -216,6 +218,7 @@ export default function App() {
     setTreatmentMinutes(CATEGORY_MINUTES.injectables);
     setTargetPct(SCALE_DEFAULTS.targetPct);
     setUnitsPerVisit(SCALE_DEFAULTS.unitsPerVisit);
+    setTreatmentName('');
     pendingReportId.current = null;
     setPhone("");
     setEmail("");
@@ -293,7 +296,7 @@ export default function App() {
             reportId, ownerName, practiceName, email, phone, feedback, contactConsent,
             hpRef: website, turnstileToken, category, paymentPlatform, treatmentType, sessions,
             price, wholesaleCost, wasteCushionPct, feeRatePct, hourlyOverhead, commissionPct,
-            treatmentsPerMonth, treatmentMinutes, targetMarginPct: targetPct
+            treatmentsPerMonth, treatmentMinutes, targetMarginPct: targetPct, treatmentName
           }))
         });
       } catch {
@@ -382,7 +385,7 @@ export default function App() {
         <p>Treatment Profitability Diagnostic</p>
         <p className="print-report-date">Report date: {new Date().toLocaleDateString('en-US')}</p>
         <p className="print-contact-details">Practice: {practiceName || 'Not provided'} • Prepared for: {ownerName || 'Not provided'}</p>
-        <p>Platform: {paymentPlatform} • Treatment: {category} • Structure: {treatmentType === 'single' ? 'Single visit' : `${sessions}-session package`}</p>
+        <p>Platform: {paymentPlatform} • Treatment: {category === 'other' && treatmentName.trim() ? treatmentName.trim() : category} • Structure: {treatmentType === 'single' ? 'Single visit' : `${sessions}-session package`}</p>
         <hr className="print-divider" />
       </div>
 
@@ -419,7 +422,11 @@ export default function App() {
       </div>
 
       {category === 'other' && (
-        <p className="threshold-note print-hide" style={{ marginTop: 10 }}>Enter your own numbers below. The starting values are only placeholders for body contouring, IV therapy, weight loss or any other treatment.</p>
+        <div className="input-group">
+          <label className="label-text" htmlFor="treatment-name">What treatment is this? (optional)</label>
+          <input id="treatment-name" className="manual-input" value={treatmentName} onChange={e => { engage(); setTreatmentName(e.target.value.replace(/[\u0000-\u001F\u007F]/g, '')); }} maxLength={60} placeholder="For example: body contouring, IV therapy, weight loss" autoComplete="off" />
+          <span className="label-sub print-hide" style={{ textAlign: 'left', display: 'block', marginTop: 4, color: '#94A3B8' }}>Enter your own numbers below. The starting values are only placeholders.</span>
+        </div>
       )}
 
       {/* Payment Platform Dropdown */}
@@ -439,7 +446,9 @@ export default function App() {
           <option value="Custom Platform Fee Override">🛠️ Custom Platform Fee Override</option>
         </select>
         <span className="label-sub" style={{ marginTop: '4px', display: 'block', color: '#94A3B8' }}>
-          Placeholder rate: {feeRatePct}%. Financing companies quote each practice its own fee, so replace this with the rate on your own statement.
+          {paymentPlatform === 'Custom Platform Fee Override'
+            ? 'Type your own rate in the fee box below. To find it: total fees you paid on your statement divided by total sales through that platform, times 100.'
+            : `Placeholder rate: ${feeRatePct}%. Financing companies quote each practice its own fee, so replace this with the rate on your own statement.`}
         </span>
       </div>
 

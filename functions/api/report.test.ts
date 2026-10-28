@@ -273,3 +273,16 @@ test('the Other treatment category is accepted; unknown categories are still ref
   assert.equal((await post(payload({ category: 'dentistry' }))).status, 400);
   assert.equal(calls.length, 1);
 });
+
+test('the optional treatment name is saved in the note, cleaned, and limited to 60 characters', async () => {
+  const calls = mockUpstream();
+  assert.equal((await post(payload({ category: 'other', treatmentName: 'IV therapy' }))).status, 200);
+  assert.match(calls[0].feedback, /Platform: .* \| Treatment: IV therapy \| Consent:/);
+  assert.equal((await post(payload({ category: 'other', treatmentName: '=HYPERLINK("x")' }))).status, 200);
+  assert.ok(calls[1].feedback.startsWith('Email:'), 'formula text cannot start a cell');
+  assert.equal((await post(payload())).status, 200);
+  assert.ok(!/Treatment:/.test(calls[2].feedback), 'no name, no label');
+  assert.equal((await post(payload({ treatmentName: 'x'.repeat(61) }))).status, 400);
+  assert.equal((await post(payload({ treatmentName: { a: 1 } }))).status, 400);
+  assert.equal(calls.length, 3);
+});
