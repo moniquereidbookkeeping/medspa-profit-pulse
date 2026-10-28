@@ -49,7 +49,11 @@ export const CATEGORY_DEFAULTS = {
   injectables: { price: 600, wholesaleCost: 200, hourlyOverhead: 50 },
   lasers: { price: 1200, wholesaleCost: 150, hourlyOverhead: 120 },
   facials: { price: 250, wholesaleCost: 35, hourlyOverhead: 45 },
+  // Placeholders for any other treatment (body contouring, IV therapy, weight loss, and so on); owners replace them.
+  other: { price: 400, wholesaleCost: 80, hourlyOverhead: 50 },
 } as const;
+
+export type Category = keyof typeof CATEGORY_DEFAULTS;
 
 /** One set of colors for the dollar figure, the percentage, and the banner, so they always agree. */
 export const ALERT_COLORS = { red: '#F87171', amber: '#FBBF24', green: '#34D399' } as const;
@@ -141,7 +145,7 @@ export const SCALE_LIMITS = {
 
 export const SCALE_DEFAULTS = { treatmentsPerMonth: 20, targetPct: 40, unitsPerVisit: 0 } as const;
 /** Placeholder treatment times (minutes per visit) the owner is expected to replace. */
-export const CATEGORY_MINUTES = { injectables: 30, lasers: 45, facials: 60 } as const;
+export const CATEGORY_MINUTES = { injectables: 30, lasers: 45, facials: 60, other: 45 } as const;
 
 export interface ProfitPulseInsights {
   /** Yearly contribution at the entered monthly volume (null when volume is 0). */

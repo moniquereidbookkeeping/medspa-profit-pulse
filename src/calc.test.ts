@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateProfitPulseMetrics, calculateInsights, PLATFORM_DEFAULT_FEES, ALERT_COLORS } from './calc.ts';
+import { CATEGORY_DEFAULTS, CATEGORY_MINUTES, calculateProfitPulseMetrics, calculateInsights, PLATFORM_DEFAULT_FEES, ALERT_COLORS } from './calc.ts';
 
 test('calculates single-visit injectables and current low-contribution warning', () => {
   const result = calculateProfitPulseMetrics({
@@ -194,4 +194,15 @@ test('per-unit view splits one visit across the units used', () => {
 test('insights never produce NaN or Infinity from bad input', () => {
   const r = calculateInsights({ ...facial, price: NaN as any }, { treatmentsPerMonth: NaN as any, treatmentMinutes: -5, targetPct: 500, unitsPerVisit: -1 });
   for (const v of [r.yearlyContribution, r.contributionPerHour, r.targetPrice, r.extraYearlyCash]) assert.ok(v === null || Number.isFinite(v));
+});
+
+test('every category, including Other treatment, has complete placeholder numbers and a treatment time', () => {
+  for (const key of Object.keys(CATEGORY_DEFAULTS) as (keyof typeof CATEGORY_DEFAULTS)[]) {
+    const d = CATEGORY_DEFAULTS[key];
+    assert.ok(d.price > 0 && d.wholesaleCost >= 0 && d.hourlyOverhead >= 0, key);
+    assert.ok(CATEGORY_MINUTES[key] > 0, key + ' minutes');
+    const m = calculateProfitPulseMetrics({ price: d.price, wholesaleCost: d.wholesaleCost, hourlyOverhead: d.hourlyOverhead, feeRatePct: 3, sessions: 1, treatmentType: 'single', wasteCushionPct: 10, commissionPct: 30 });
+    assert.ok(Number.isFinite(m.yourRealTakeawayCash), key);
+  }
+  assert.ok('other' in CATEGORY_DEFAULTS);
 });

@@ -114,7 +114,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     const inputNums = ['sessions', 'price', 'wholesaleCost', 'wasteCushionPct', 'feeRatePct', 'hourlyOverhead', 'commissionPct'];
     if (inputNums.some(k => typeof data[k] !== 'number' || !Number.isFinite(data[k]) || Math.abs(data[k]) > 1e8)) return fail(400, 'Invalid numeric input');
     const platform = typeof data.paymentPlatform === 'string' ? data.paymentPlatform : '';
-    if (!['injectables', 'lasers', 'facials'].includes(data.category) || !ALLOWED_PLATFORMS.includes(platform) || !['single', 'package'].includes(data.treatmentType)) return fail(400, 'Invalid selection');
+    if (!['injectables', 'lasers', 'facials', 'other'].includes(data.category) || !ALLOWED_PLATFORMS.includes(platform) || !['single', 'package'].includes(data.treatmentType)) return fail(400, 'Invalid selection');
     if (data.price < 0 || data.wholesaleCost < 0 || data.hourlyOverhead < 0 || data.feeRatePct < 0 || data.feeRatePct > 30 || !Number.isInteger(data.sessions) || data.sessions < 1 || data.sessions > 24 || data.wasteCushionPct < 0 || data.wasteCushionPct > 50 || data.commissionPct < 0 || data.commissionPct > 100) return fail(400, 'Numeric value outside allowed range');
     if (data.treatmentType === 'single' && data.sessions !== 1) return fail(400, 'Single-visit reports must have exactly one session');
     // Optional "scale it up" inputs (older pages do not send them). When present they must be sensible numbers.

@@ -265,3 +265,11 @@ test('throw-away and placeholder email addresses are refused and nothing is save
   assert.equal(calls.length, 0);
   assert.equal((await post(payload({ email: 'paul@gmail.com' }))).status, 200);
 });
+
+test('the Other treatment category is accepted; unknown categories are still refused', async () => {
+  const calls = mockUpstream();
+  assert.equal((await post(payload({ category: 'other' }))).status, 200);
+  assert.equal(calls[0].category, 'other');
+  assert.equal((await post(payload({ category: 'dentistry' }))).status, 400);
+  assert.equal(calls.length, 1);
+});

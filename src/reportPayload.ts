@@ -1,4 +1,4 @@
-import type { PaymentPlatform } from './calc';
+import type { PaymentPlatform, Category } from './calc';
 
 /** Fields the page sends to /api/report. Totals are deliberately NOT sent: the server recomputes them. */
 export interface ReportPayloadInput {
@@ -11,7 +11,7 @@ export interface ReportPayloadInput {
   contactConsent: boolean;
   hpRef: string;
   turnstileToken: string;
-  category: 'injectables' | 'lasers' | 'facials';
+  category: Category;
   paymentPlatform: PaymentPlatform;
   treatmentType: 'single' | 'package';
   sessions: number;

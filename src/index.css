@@ -110,7 +110,7 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .tab-container {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   background-color: #060913;
   padding: 5px;
   border-radius: 14px;
@@ -606,3 +606,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .field-note-suggest { color: #FDE68A; }
 .link-btn { background: none; border: 0; padding: 0; margin: 0 0 0 4px; font: inherit; font-weight: 700; color: #F5E6C4; text-decoration: underline; cursor: pointer; }
 @media print { .emoji-icon { display: none !important; } }
+
+.cta-link { display: block; text-align: center; text-decoration: none; padding: 14px 16px; border-radius: 12px; font-weight: 800; font-size: 14px; margin-top: 14px; }
+.cta-link:hover { filter: brightness(1.05); }
+@media (max-width: 480px) { .tab-container { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media print { .cta-link, .secondary-cta-btn { display: none !important; } }

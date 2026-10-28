@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { calculateProfitPulseMetrics, calculateInsights, ALERT_COLORS, ALERT_THRESHOLD_NOTE, CATEGORY_DEFAULTS, CATEGORY_MINUTES, SCALE_DEFAULTS, SCALE_LIMITS, PLATFORM_DEFAULT_FEES, PaymentPlatform } from './calc';
+import { calculateProfitPulseMetrics, calculateInsights, Category, ALERT_COLORS, ALERT_THRESHOLD_NOTE, CATEGORY_DEFAULTS, CATEGORY_MINUTES, SCALE_DEFAULTS, SCALE_LIMITS, PLATFORM_DEFAULT_FEES, PaymentPlatform } from './calc';
 import NumField from './NumField';
 import Turnstile from './Turnstile';
 import { track } from './analytics';
@@ -17,7 +17,7 @@ const LEAD_CAPTURED_KEY = "medspa_profit_pulse_lead_captured";
 // ---- Easy-to-edit business settings -------------------------------------------------------
 const SITE_URL = 'https://moniquereidbookkeeping.com/';
 /** Swap this for a calendar booking link (Calendly, Google Calendar, etc.) when you have one. */
-const BOOKING_URL = SITE_URL;
+const BOOKING_URL = 'https://calendly.com/moniquethebookkeeper/20min';
 /** Optional: link to your privacy policy. Leave empty to hide the link. */
 const PRIVACY_URL = '/privacy.html';
 /** The offer changes with the result, so the message always matches what the visitor just saw. */
@@ -26,7 +26,7 @@ const REVIEW_HEADLINES = {
   amber: 'You are close. Want a quick look at what to tighten?',
   green: 'Strong numbers. Want a second set of eyes on the rest of your menu?'
 } as const;
-const REVIEW_TEXT = 'Enter your details to save your full report. Monique will also follow up about a free 15-minute treatment profit review. No obligation.';
+const REVIEW_TEXT = 'Enter your details to save your full report. Monique will also follow up about a free 20-minute treatment profit review. No obligation.';
 // --------------------------------------------------------------------------------------------
 
 /** Your Google Sheet script currently refuses a request with no phone number. Set this to false after the script accepts blank phones. */
@@ -34,15 +34,18 @@ const PHONE_REQUIRED = false;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-const CATEGORIES = ['injectables', 'lasers', 'facials'] as const;
+const CATEGORIES = ['injectables', 'lasers', 'facials', 'other'] as const;
 /** Keep a saved/stale value inside the range the calculator and server accept. */
 const clampNum = (v: unknown, min: number, max: number, fallback: number) =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : fallback;
 
+/** Calendly records these tags with each booking, so you can see which bookings came from the calculator. */
+const withBookingUtm = (url: string) => `${url}?utm_source=profit-pulse&utm_medium=calculator&utm_campaign=profit-pulse`;
+
 type SaveStatus = 'idle' | 'saving' | 'ok' | 'error';
 
 export default function App() {
-  const [category, setCategory] = useState<'injectables' | 'lasers' | 'facials'>('injectables');
+  const [category, setCategory] = useState<Category>('injectables');
   const [paymentPlatform, setPaymentPlatform] = useState<PaymentPlatform>('Regular Card Processing (Stripe, Vagaro, Square)');
   const [feeRatePct, setFeeRatePct] = useState<number>(3.0);
   const [treatmentType, setTreatmentType] = useState<'single' | 'package'>('single');
@@ -163,7 +166,7 @@ export default function App() {
   // One color for the dollar figure, the percentage, and the banner.
   const toneColor = ALERT_COLORS[metrics.alertLevel];
 
-  const handleCategoryChange = (cat: 'injectables' | 'lasers' | 'facials') => {
+  const handleCategoryChange = (cat: Category) => {
     setCategory(cat);
     const defaults = CATEGORY_DEFAULTS[cat];
     // In package mode the price box holds the TOTAL package price, so scale the single-visit default.
@@ -309,9 +312,9 @@ export default function App() {
         const friendly = response.status >= 400 && response.status < 500 && typeof result.error === 'string'
           ? result.error
           : 'We could not save your details right now.';
-        // A short code (for example upstream_rejected) tells Monique which step failed, without showing technical details.
-        const code = typeof result.code === 'string' && /^[a-z0-9_]{3,40}$/.test(result.code) ? ` (Code: ${result.code})` : ` (Code: http_${response.status})`;
-        throw new Error(friendly + code);
+        // The short failure code stays in the browser console for troubleshooting; visitors only see the friendly line.
+        console.warn('Save failed', typeof result.code === 'string' ? result.code : `http_${response.status}`);
+        throw new Error(friendly);
       }
 
       try { localStorage.setItem(LEAD_CAPTURED_KEY, 'true'); } catch (storageError) { console.warn('Could not remember capture preference', storageError); }
@@ -358,10 +361,11 @@ export default function App() {
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(val);
   const per = treatmentType === 'package' ? 'package' : 'treatment';
 
-  const tabs: { id: 'injectables' | 'lasers' | 'facials'; label: string }[] = [
+  const tabs: { id: Category; label: string }[] = [
     { id: 'injectables', label: 'Injectables' },
     { id: 'lasers', label: 'Lasers & Devices' },
-    { id: 'facials', label: 'Facials & Skin' }
+    { id: 'facials', label: 'Facials & Skin' },
+    { id: 'other', label: 'Other Treatment' }
   ];
 
   return (
@@ -413,6 +417,10 @@ export default function App() {
           </button>
         ))}
       </div>
+
+      {category === 'other' && (
+        <p className="threshold-note print-hide" style={{ marginTop: 10 }}>Enter your own numbers below. The starting values are only placeholders for body contouring, IV therapy, weight loss or any other treatment.</p>
+      )}
 
       {/* Payment Platform Dropdown */}
       <div className="input-group print-hide">
@@ -711,7 +719,10 @@ export default function App() {
         <button type="button" className="secondary-cta-btn print-report-btn" onClick={handlePrint} style={{ marginTop: '12px' }}>{isLeadCaptured ? 'Print / Save My Full Report' : 'Unlock My Full Report (enter your details above)'}</button>
       </div>
 
-      <a href={BOOKING_URL} onClick={() => track('cta_clicked')} target="_blank" rel="noopener" className="secondary-cta-btn">
+      <a href={withBookingUtm(BOOKING_URL)} onClick={() => track('booking_clicked')} target="_blank" rel="noopener" className="cta-btn cta-link">
+        Book Your Free 20-Minute Review
+      </a>
+      <a href={SITE_URL} onClick={() => track('cta_clicked')} target="_blank" rel="noopener" className="secondary-cta-btn">
         See How Monique Helps Practices Like Yours
       </a>
 

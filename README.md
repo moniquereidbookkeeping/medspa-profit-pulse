@@ -2,7 +2,7 @@
 
 Free treatment-profit calculator for MedSpas, built by Monique Reid Bookkeeping as a lead magnet.
 Visitors see what a treatment really keeps after payment/financing fees, product, provider pay and room cost,
-can print the report for free, and can ask for a free 15-minute review (name, practice, email, optional phone).
+can print the report for free, and can ask for a free 20-minute review (name, practice, email, optional phone).
 
 ## How leads are saved
 
