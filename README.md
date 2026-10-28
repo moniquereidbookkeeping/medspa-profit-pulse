@@ -69,3 +69,11 @@ npm run build    # production build into dist/
 ```
 
 All figures are estimates for planning and discussion with an accountant, not tax, legal or CPA advice.
+
+
+## Reminders
+
+- **Review the lead list about two weeks after launch.** Count the junk or made-up rows in the sheet. If more than a few are fake, add an email confirmation step: the visitor receives a short code by email and enters it to unlock the full report. The throw-away email block in `src/emailCheck.ts` already stops the obvious fakes.
+- **Phone number:** `PHONE_REQUIRED` in `src/App.tsx` controls whether the phone box is required. The Google Sheet script must accept a blank phone before it is set to `false` (it is `false` now, and the script was updated to allow it).
+- **Booking link:** replace `BOOKING_URL` in `src/App.tsx` with a calendar link when you have one.
+- **Dependabot:** major-version upgrade branches (Vite 8, React 19, TypeScript 7) are not safe to merge without testing. Close them unless you plan an upgrade.

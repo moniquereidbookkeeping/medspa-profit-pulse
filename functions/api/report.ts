@@ -211,9 +211,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       // Details go to the Cloudflare logs only; visitors get a friendly message and a short code that says which step failed.
       console.error('Apps Script rejected report submission', { httpStatus: res.status, reason: typeof result.error === 'string' ? result.error : 'unrecognized response' });
       const code = !res.ok ? `upstream_http_${res.status}` : result.saved === false ? 'upstream_rejected' : result.saved === true ? 'upstream_id_mismatch' : 'upstream_bad_response';
-      // TEMPORARY while the sheet connection is being tested: a short, printable-characters-only reason from the sheet script.
-      const detail = typeof result.error === 'string' ? result.error.replace(/[^\x20-\x7E]/g, '').slice(0, 120) : '';
-      return jsonResponse({ saved: false, error: 'We could not save your details right now.', code, ...(detail ? { detail } : {}) }, 502);
+      return fail(502, 'We could not save your details right now.', code);
     }
     return jsonResponse({ saved: true, reportId: id });
   } catch (e) {

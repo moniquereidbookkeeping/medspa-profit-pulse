@@ -3,6 +3,8 @@
 
 /*
   X-Content-Type-Options: nosniff
+  # The site is HTTPS-only; this tells browsers never to use plain http for it.
+  Strict-Transport-Security: max-age=31536000
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
   # Only this site loads and runs scripts here. Allowed outside hosts: the Cloudflare bot check, Plausible, Cloudflare Web Analytics.

@@ -311,9 +311,7 @@ export default function App() {
           : 'We could not save your details right now.';
         // A short code (for example upstream_rejected) tells Monique which step failed, without showing technical details.
         const code = typeof result.code === 'string' && /^[a-z0-9_]{3,40}$/.test(result.code) ? ` (Code: ${result.code})` : ` (Code: http_${response.status})`;
-        // TEMPORARY while the sheet connection is being tested: show the short reason from the sheet script.
-        const why = typeof result.detail === 'string' && result.detail ? ` Reason: ${result.detail.slice(0, 120)}` : '';
-        throw new Error(friendly + code + why);
+        throw new Error(friendly + code);
       }
 
       try { localStorage.setItem(LEAD_CAPTURED_KEY, 'true'); } catch (storageError) { console.warn('Could not remember capture preference', storageError); }
@@ -367,7 +365,7 @@ export default function App() {
   ];
 
   return (
-    <div className={`app-card${isLeadCaptured ? '' : ' report-locked'}`}>
+    <main className={`app-card${isLeadCaptured ? '' : ' report-locked'}`}>
       {/* Printed instead of the report when the visitor has not yet saved their details (for example Ctrl+P) */}
       <div className="print-lock-note">
         <h1>MONIQUE REID BOOKKEEPING</h1>
@@ -727,6 +725,6 @@ export default function App() {
         DISCLAIMER: Estimates are generated based on your manual inputs for planning and discussion with your accountant. Not a CPA audit, tax, or legal opinion.<br/>
         MONIQUE REID BOOKKEEPING • SECURE VIRTUAL SOLUTIONS
       </p>
-    </div>
+    </main>
   );
 }
