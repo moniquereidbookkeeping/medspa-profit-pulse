@@ -278,8 +278,10 @@ test('the optional treatment name is saved in the note, cleaned, and limited to 
   const calls = mockUpstream();
   assert.equal((await post(payload({ category: 'other', treatmentName: 'IV therapy' }))).status, 200);
   assert.match(calls[0].feedback, /Platform: .* \| Treatment: IV therapy \| Consent:/);
+  assert.equal(calls[0].treatmentName, 'IV therapy', 'also sent as its own field so the sheet script can use a Treatment column');
   assert.equal((await post(payload({ category: 'other', treatmentName: '=HYPERLINK("x")' }))).status, 200);
   assert.ok(calls[1].feedback.startsWith('Email:'), 'formula text cannot start a cell');
+  assert.ok(calls[1].treatmentName.startsWith("'="), 'formula text in its own field is neutralised too');
   assert.equal((await post(payload())).status, 200);
   assert.ok(!/Treatment:/.test(calls[2].feedback), 'no name, no label');
   assert.equal((await post(payload({ treatmentName: 'x'.repeat(61) }))).status, 400);

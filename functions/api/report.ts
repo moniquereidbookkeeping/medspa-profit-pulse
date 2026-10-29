@@ -194,7 +194,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       totalCostOfMaterials, hiddenPlatformFees, providerPayrollCut, roomOperationalExpense, totalOutflows, contribution, margin,
       reportId: id,
       ownerName: sheetSafe(ownerName), practiceName: sheetSafe(practiceName), phone: sheetSafe(phoneStored), email: sheetSafe(email),
-      contactConsent: true, consentAt, feedback: sheetSafe(note), category: data.category,
+      contactConsent: true, consentAt, feedback: sheetSafe(note), category: data.category, treatmentName: sheetSafe(treatmentName),
       paymentPlatform: platform, paymentMethod: platform.startsWith('Cherry Financing') ? 'cherry' : 'card',
       treatmentType: data.treatmentType,
       smsStatus: 'Prepared', source: 'MedSpa Profit Pulse', secret: env.REPORT_SHARED_SECRET
