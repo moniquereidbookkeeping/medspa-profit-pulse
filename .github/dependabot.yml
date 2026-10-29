@@ -9,6 +9,11 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # Big version jumps (for example Vite 8, React 19, TypeScript 7) need real testing, so they are done by hand,
+    # on purpose, not proposed automatically every week.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
