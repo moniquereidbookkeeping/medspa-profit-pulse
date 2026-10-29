@@ -1,8 +1,9 @@
 # The Profit Pulse (MedSpa Profit Calculator)
 
 Free treatment-profit calculator for MedSpas, built by Monique Reid Bookkeeping as a lead magnet.
-Visitors see what a treatment really keeps after payment/financing fees, product, provider pay and room cost,
-can print the report for free, and can ask for a free 20-minute review (name, practice, email, optional phone).
+Visitors see what a treatment really keeps after payment/financing fees, product, provider pay and room cost, with
+yearly impact, a price check, and profit per treatment hour. The on-screen results are free. The full printable report
+is unlocked when they share their name, practice, email and (optionally) phone, and they can book a free 20-minute review.
 
 ## How leads are saved
 
@@ -25,8 +26,8 @@ confirm a row lands in the sheet. Do this after every change to the Cloudflare s
 
 ### About the sheet columns
 
-The sheet does not need to change. Because it has no Email or Platform column yet, the server also writes
-`Email: ... | Platform: ... | Feedback: ...` into the **Feedback** column. The payload sent to the Apps Script also contains
+The sheet does not need to change. Because it has no Email, Platform or Treatment column yet, the server also writes
+`Email: ... | Platform: ... | Treatment: ... | Consent: ... | Volume: ... | Feedback: ...` into the **Feedback** column. The payload sent to the Apps Script also contains
 separate `email` and `paymentPlatform` fields, so when you add those columns you only need to read them in the script.
 
 Only contact rows where `contactConsent` is `true` (the server now requires it for every saved request).

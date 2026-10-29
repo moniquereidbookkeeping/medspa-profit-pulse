@@ -152,8 +152,8 @@ export interface ProfitPulseInsights {
   yearlyContribution: number | null;
   /** Contribution per hour of treatment time (null when minutes is 0). */
   contributionPerHour: number | null;
-  /** 'meets' = already at or above target; 'raise' = price needed; 'impossible' = fees + commission alone exceed the target. */
-  priceCheck: 'none' | 'meets' | 'raise' | 'impossible';
+  /** 'meets' = already at or above target; 'raise' = price needed; 'stretch' = price would need more than tripling (look at costs first); 'impossible' = fees + commission alone exceed the target. */
+  priceCheck: 'none' | 'meets' | 'raise' | 'stretch' | 'impossible';
   targetPrice: number | null;
   priceIncreasePct: number | null;
   /** Extra yearly cash if the price were raised to targetPrice at the same volume (null when volume is 0). */
@@ -204,10 +204,10 @@ export function calculateInsights(i: ProfitPulseInputs, s: ScaleInputs): ProfitP
         if (p <= price) {
           priceCheck = 'meets';
         } else {
-          priceCheck = 'raise';
+          priceCheck = p > price * 3 ? 'stretch' : 'raise';
           targetPrice = p;
           priceIncreasePct = pct(100 * (p - price) / price);
-          if (perMonth > 0) {
+          if (priceCheck === 'raise' && perMonth > 0) {
             const gain = calculateProfitPulseMetrics({ ...i, price: p }).yourRealTakeawayCash - m.yourRealTakeawayCash;
             extraYearlyCash = money(gain * yearlyFactor);
           }

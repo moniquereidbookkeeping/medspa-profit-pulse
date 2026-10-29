@@ -655,6 +655,9 @@ export default function App() {
             {insights.extraYearlyCash !== null && <> If your volume held steady, that is roughly <strong>{formatWhole(insights.extraYearlyCash)} more a year</strong>.</>}
           </p>
         )}
+        {insights.priceCheck === 'stretch' && insights.targetPrice !== null && (
+          <p className="price-check"><strong>Price check:</strong> reaching {targetPct}% by price alone would take about <strong>{formatCurrency(insights.targetPrice)}</strong>, which is a very big jump. Look at product cost, payment fees, provider pay and room cost first.</p>
+        )}
         {insights.priceCheck === 'meets' && (
           <p className="price-check"><strong>Price check:</strong> this {per} already reaches your {targetPct}% target.</p>
         )}

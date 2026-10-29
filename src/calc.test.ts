@@ -155,16 +155,26 @@ test('yearly contribution = contribution per treatment x monthly volume x 12', (
   assert.equal(calculateInsights(facial, { ...scale, treatmentsPerMonth: 0 }).yearlyContribution, null);
 });
 
+const inj = { price: 600, wholesaleCost: 200, hourlyOverhead: 50, feeRatePct: 3, sessions: 1, treatmentType: 'single' as const, wasteCushionPct: 10, commissionPct: 30 };
+
 test('price check finds the lowest whole-dollar price that reaches the target, and the gain per year', () => {
-  const r = calculateInsights(facial, scale);
+  const r = calculateInsights(inj, scale);
   assert.equal(r.priceCheck, 'raise');
-  assert.equal(r.targetPrice, 1339);
-  const at = calculateProfitPulseMetrics({ ...facial, price: r.targetPrice! });
-  const below = calculateProfitPulseMetrics({ ...facial, price: r.targetPrice! - 1 });
+  assert.equal(r.targetPrice, 1000);
+  const at = calculateProfitPulseMetrics({ ...inj, price: r.targetPrice! });
+  const below = calculateProfitPulseMetrics({ ...inj, price: r.targetPrice! - 1 });
+  const now = calculateProfitPulseMetrics(inj);
   // Compare exact (unrounded-percentage) ratios: the displayed % is rounded to one decimal.
-  assert.ok(at.yourRealTakeawayCash / (r.targetPrice!) >= 0.4);
+  assert.ok(at.yourRealTakeawayCash / r.targetPrice! >= 0.4);
   assert.ok(below.yourRealTakeawayCash / (r.targetPrice! - 1) < 0.4, 'one dollar less would miss the target');
-  assert.equal(r.extraYearlyCash, Math.round((at.yourRealTakeawayCash - 29.25) * 240 * 100) / 100);
+  assert.equal(r.extraYearlyCash, Math.round((at.yourRealTakeawayCash - now.yourRealTakeawayCash) * 240 * 100) / 100);
+});
+
+test('a facial with 13.5% financing and 40% commission would need more than triple the price, so it is a stretch', () => {
+  const r = calculateInsights(facial, scale);
+  assert.equal(r.priceCheck, 'stretch');
+  assert.equal(r.targetPrice, 1339);
+  assert.equal(r.extraYearlyCash, null);
 });
 
 test('price check says "meets" when already at target and "impossible" when fees + commission eat the target', () => {
@@ -184,7 +194,6 @@ test('package mode: price is the whole package, volume is packages per month, ho
 });
 
 test('per-unit view splits one visit across the units used', () => {
-  const inj = { price: 600, wholesaleCost: 200, hourlyOverhead: 50, feeRatePct: 3, sessions: 1, treatmentType: 'single' as const, wasteCushionPct: 10, commissionPct: 30 };
   const m = calculateProfitPulseMetrics(inj);
   const r = calculateInsights(inj, { ...scale, unitsPerVisit: 40 });
   assert.deepEqual(r.perUnit, { price: 15, cost: 5.5, contribution: Math.round(m.takeawayPerVisit / 40 * 100) / 100 });
@@ -205,4 +214,12 @@ test('every category, including Other treatment, has complete placeholder number
     assert.ok(Number.isFinite(m.yourRealTakeawayCash), key);
   }
   assert.ok('other' in CATEGORY_DEFAULTS);
+});
+
+test('a price that would need to more than triple is flagged as a stretch, with no yearly gain promised', () => {
+  const r = calculateInsights({ ...facial, feeRatePct: 28, commissionPct: 30, price: 250 }, scale); // only ~2% of each dollar is left for costs and profit
+  assert.equal(r.priceCheck, 'stretch');
+  assert.ok(r.targetPrice! > 750);
+  assert.equal(r.extraYearlyCash, null);
+  assert.equal(calculateInsights(inj, scale).priceCheck, 'raise', 'the normal case is unchanged');
 });
