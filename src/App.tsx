@@ -20,6 +20,9 @@ const SITE_URL = 'https://moniquereidbookkeeping.com/';
 const BOOKING_URL = 'https://calendly.com/moniquethebookkeeper/20min';
 /** Optional: link to your privacy policy. Leave empty to hide the link. */
 const PRIVACY_URL = '/privacy.html';
+const ASSUMPTIONS_TEXT = 'All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Yearly figures assume the same price, costs and monthly volume all year. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.';
+/** Phones and tablets: printing a web page is unreliable there (no printer saved, blank preview), so they get a PDF download. */
+const isTouchDevice = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch { return false; } };
 /** The offer changes with the result, so the message always matches what the visitor just saw. */
 const REVIEW_HEADLINES = {
   red: 'Cash may be leaking out of this treatment. Want help finding where?',
@@ -327,10 +330,12 @@ export default function App() {
       setIsLeadCaptured(true);
       setIsEditingContact(false);
       setSaveStatus('ok');
-      setSaveMessage('Thank you. Your report is opening now. If it does not, press the Print / Save My Full Report button below. Monique will follow up at ' + email.trim() + '.');
+      setSaveMessage(isTouchDevice()
+        ? 'Thank you. Press the Download My Full Report (PDF) button below to save your report. Monique will follow up at ' + email.trim() + '.'
+        : 'Thank you. Your report is opening now. If it does not, press the Download or Print button below. Monique will follow up at ' + email.trim() + '.');
       track('review_requested', { alert: metrics.alertLevel, category });
       // The full report opens right after the details are saved. The button below stays available if a browser blocks this.
-      setTimeout(() => { track('report_printed'); window.print(); }, 400);
+      if (!isTouchDevice()) setTimeout(() => { track('report_printed'); window.print(); }, 400);
     } catch (error) {
       console.error('Remote save failed', error);
       const reason = error instanceof Error ? error.message : 'We could not save your details right now.';
@@ -354,6 +359,57 @@ export default function App() {
     }
     track('report_printed');
     window.print();
+  };
+
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const downloadPdf = async () => {
+    if (!isLeadCaptured) { handlePrint(); return; }
+    setPdfBusy(true);
+    try {
+      const { buildReportPdf } = await import('./reportPdf');
+      const lines: string[] = [];
+      if (insights.yearlyContribution !== null) lines.push(`Estimated yearly contribution (${treatmentsPerMonth} ${per === 'package' ? 'packages' : 'treatments'} a month): ${formatWhole(insights.yearlyContribution)}`);
+      if (insights.contributionPerHour !== null) lines.push(`Estimated contribution per treatment hour (${treatmentMinutes} min per visit): ${formatCurrency(insights.contributionPerHour)}`);
+      if (insights.perUnit) lines.push(`Per unit: client pays ${formatCurrency(insights.perUnit.price)}, product costs ${formatCurrency(insights.perUnit.cost)}, you keep ${formatCurrency(insights.perUnit.contribution)}`);
+      if (insights.priceCheck === 'raise' && insights.targetPrice !== null) lines.push(`Price check: to reach ${targetPct}% contribution, this ${per} would need to be about ${formatCurrency(insights.targetPrice)}${insights.priceIncreasePct !== null ? ` (${insights.priceIncreasePct}% more than today)` : ''}.`);
+      if (insights.priceCheck === 'stretch' && insights.targetPrice !== null) lines.push(`Price check: reaching ${targetPct}% by price alone would take about ${formatCurrency(insights.targetPrice)}, which is a very big jump. Look at product cost, payment fees, provider pay and room cost first.`);
+      if (insights.priceCheck === 'meets') lines.push(`Price check: this ${per} already reaches your ${targetPct}% target.`);
+      if (insights.priceCheck === 'impossible') lines.push(`Price check: platform fees and provider commission alone take ${insights.feePlusCommissionPct}% of the price, so a ${targetPct}% target cannot be reached by price alone.`);
+      lines.push('Yearly figures assume the same price, costs and volume every month. They are estimates for planning, not forecasts.');
+      const rows: [string, string][] = [
+        ['Estimated Treatment Contribution', formatCurrency(metrics.yourRealTakeawayCash)],
+        ['Estimated Treatment Contribution Percentage', `${metrics.yourRealKeepPercentagePct}%`],
+        [`Platform Fees (${feeRatePct}%)`, formatCurrency(metrics.hiddenPlatformFees)],
+        [`Total Cost of Materials (+${wasteCushionPct}% cushion)`, formatCurrency(metrics.totalCostOfMaterials)],
+        [`Provider Payroll Cut (${commissionPct}%)`, formatCurrency(metrics.providerPayrollCut)],
+        ['Estimated Room / Operational Expense (per visit x sessions)', formatCurrency(metrics.roomOperationalExpense)],
+        ['Total Estimated Outflows', formatCurrency(metrics.totalOutflows)]
+      ];
+      if (treatmentType === 'package' && sessions > 1) rows.push([`Contribution Per Visit (${sessions} visits)`, formatCurrency(metrics.takeawayPerVisit)]);
+      const blob = await buildReportPdf({
+        date: new Date().toLocaleDateString('en-US'),
+        practice: practiceName || 'Not provided',
+        owner: ownerName || 'Not provided',
+        summaryLine: `Platform: ${paymentPlatform}   Treatment: ${category === 'other' && treatmentName.trim() ? treatmentName.trim() : category}   Structure: ${treatmentType === 'single' ? 'Single visit' : `${sessions}-session package`}`,
+        rows,
+        insightLines: lines,
+        alertText: metrics.alertMessage,
+        thresholdNote: ALERT_THRESHOLD_NOTE,
+        assumptions: ASSUMPTIONS_TEXT
+      });
+      track('report_downloaded');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'Profit-Pulse-Report.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      console.error('PDF failed', error);
+      setSaveStatus('error');
+      setSaveMessage('We could not make the PDF. Please try again, or use the Print link.');
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   const formatCurrency = (val: number) => {
@@ -728,7 +784,8 @@ export default function App() {
         {saveMessage && (
           <p role={saveStatus === 'error' ? 'alert' : 'status'} className={`save-message save-${saveStatus}`}>{saveMessage}</p>
         )}
-        <button type="button" className="secondary-cta-btn print-report-btn" onClick={handlePrint} style={{ marginTop: '12px' }}>{isLeadCaptured ? 'Print / Save My Full Report' : 'Unlock My Full Report (enter your details above)'}</button>
+        <button type="button" className="secondary-cta-btn print-report-btn" onClick={downloadPdf} disabled={pdfBusy} style={{ marginTop: '12px' }}>{isLeadCaptured ? (pdfBusy ? 'Preparing your PDF...' : 'Download My Full Report (PDF)') : 'Unlock My Full Report (enter your details above)'}</button>
+        {isLeadCaptured && <p className="threshold-note print-hide" style={{ textAlign: 'center', marginTop: 8 }}>Prefer paper? <button type="button" className="link-btn" onClick={handlePrint}>Print the report instead</button></p>}
       </div>
 
       <a href={withBookingUtm(BOOKING_URL)} onClick={() => track('booking_clicked')} target="_blank" rel="noopener" className="cta-btn cta-link">
@@ -738,7 +795,7 @@ export default function App() {
         See How Monique Helps Practices Like Yours
       </a>
 
-      <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>All figures are estimates based on the inputs provided. Package price is treated as the total price for all sessions; material and room costs are multiplied by session count. Provider compensation and platform fees are estimated against the entered treatment/package price. This is not a complete clinic-level profit calculation, accounting advice, or a guarantee of actual fees. Yearly figures assume the same price, costs and monthly volume all year. Confirm actual processor contracts, treatment time, taxes, refunds, payroll arrangements, and accounting treatment with your qualified advisers.</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
+      <div className="print-assumptions"><strong>Assumptions and limitations</strong><p>{ASSUMPTIONS_TEXT}</p><p className="print-signature">Monique Reid Bookkeeping • Secure Virtual Solutions</p></div>
 
       <p className="privacy-note">
         Your calculator entries are saved only in this browser. When you unlock your full report, your contact details and the numbers you entered are saved by Monique Reid Bookkeeping so she can follow up. A Cloudflare security check confirms you are a person, and we count visits without recording who you are.

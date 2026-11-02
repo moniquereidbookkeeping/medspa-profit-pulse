@@ -22,7 +22,7 @@ const inlineCriticalCss = () => ({
       if (link.test(html)) {
         const css = String(asset.source);
         html = html.replace(link, () => `<style>${css}</style>`);
-        delete bundle[file];
+        // Keep the file: the lazily loaded PDF code lists it as a dependency, and a missing file makes that load fail.
       }
     }
     page.source = html;
