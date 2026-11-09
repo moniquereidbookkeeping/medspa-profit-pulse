@@ -12,7 +12,7 @@
     "test": "tsx --test src/calc.test.ts src/reportPayload.test.ts src/emailCheck.test.ts functions/api/report.test.ts functions/api/config.test.ts"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.0.0",
+    "@tailwindcss/vite": "^4.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "jspdf": "^4.2.1",
     "react": "^18.3.1",
