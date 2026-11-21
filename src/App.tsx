@@ -24,7 +24,6 @@ const STORAGE_KEY = 'medspa_profit_pulse_state';
 const LEGACY_LEAD_CAPTURED_KEY = 'medspa_profit_pulse_lead_captured';
 
 // ---- Easy-to-edit business settings -------------------------------------------------------
-const SITE_URL = 'https://moniquereidbookkeeping.com/';
 /** Optional: link to your privacy policy. Leave empty to hide the link. */
 const PRIVACY_URL = '/privacy.html';
 const ASSUMPTIONS_TEXT =
@@ -804,17 +803,6 @@ export default function App() {
           {metrics.deferredWarningText}
         </div>
       )}
-
-      <a
-        href={SITE_URL}
-        onClick={() => track('cta_clicked')}
-        target="_blank"
-        rel="noopener"
-        className="secondary-cta-btn"
-        style={{ marginTop: '16px' }}
-      >
-        See How Monique Helps Practices Like Yours
-      </a>
 
       <div className="print-assumptions">
         <strong>Assumptions and limitations</strong>
